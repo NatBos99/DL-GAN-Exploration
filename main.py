@@ -9,8 +9,8 @@ from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 
 from GAN import GAN
-from generator import Generator_CNN
-from discriminator import Discriminator_CNN
+from generator import GeneratorCNN
+from discriminator import DiscriminatorCNN
 
 
 def set_up(args):
@@ -19,6 +19,11 @@ def set_up(args):
                        download=True,
                        transform=ToTensor())
     elif args.dataset == "MNIST":
+        new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
+        MNIST.resources = [
+            ('/'.join([new_mirror, url.split('/')[-1]]), md5)
+            for url, md5 in MNIST.resources
+        ]
         data = MNIST(root="Datasets/MNIST",
                      download=True,
                      transform=ToTensor())
@@ -61,7 +66,7 @@ if __name__ == "__main__":
 
     CIFAR10_data_loader, img_shape = set_up(args)
 
-    gen = Generator_CNN(img_shape, args.latent_dim)
-    dis = Discriminator_CNN(img_shape)
+    gen = GeneratorCNN(img_shape, args.latent_dim)
+    dis = DiscriminatorCNN(img_shape)
 
     train(args, gen, dis, CIFAR10_data_loader)
