@@ -1,7 +1,7 @@
 import torch.nn as nn
 import numpy as np
 
-class Generator_CNN(nn.Module):
+class GeneratorCNN(nn.Module):
     """
     G(z|theta)
     """
@@ -43,5 +43,5 @@ class Generator_CNN(nn.Module):
         return img
 
 if __name__ == "__main__":
-    a = Generator_CNN((1, 28, 28), 100)
+    a = GeneratorCNN((1, 28, 28), 100)
     print()
