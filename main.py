@@ -4,7 +4,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10, MNIST
-from torchvision.transforms import ToTensor
+from torchvision import transforms
 
 import pytorch_lightning as pl
 
@@ -17,7 +17,7 @@ def set_up(args):
     if args.dataset == "CIFAR10":
         data = CIFAR10(root="Datasets/cifar-10-batches-py",
                        download=True,
-                       transform=ToTensor())
+                       transform=transforms.ToTensor())
     elif args.dataset == "MNIST":
         new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
         MNIST.resources = [
@@ -26,7 +26,10 @@ def set_up(args):
         ]
         data = MNIST(root="Datasets/MNIST",
                      download=True,
-                     transform=ToTensor())
+                     transform=transforms.Compose(
+                         [transforms.Resize(32), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
+                     ),
+                     )
     else:
         raise NotImplementedError
 
@@ -37,12 +40,12 @@ def set_up(args):
                              shuffle=args.shuffle,
                              )
 
-    return data_loader, img_shape
+    return data_loader, list(img_shape)
 
 
 def train(args, generator, discriminator, data_loader):
     model = GAN(generator, discriminator, batch_size=args.batch_size)
-    trainer = pl.Trainer(gpus=1, max_epochs=args.n_epoch,
+    trainer = pl.Trainer(gpus=None, max_epochs=args.n_epoch,
                          progress_bar_refresh_rate=20)
     trainer.fit(model, data_loader)
 

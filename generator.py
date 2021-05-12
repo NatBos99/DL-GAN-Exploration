@@ -13,8 +13,8 @@ class GeneratorCNN(nn.Module):
         super().__init__()
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
-        self.init_width = image_shape[1]
-        self.init_height = image_shape[2]
+        self.init_width = image_shape[1] // 4
+        self.init_height = image_shape[2] // 4
 
 
         self.linear_layer = nn.Sequential(nn.Linear(latent_dim,

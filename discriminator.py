@@ -18,14 +18,14 @@ class DiscriminatorCNN(nn.Module):
             return block
 
         self.model = nn.Sequential(
-            *discriminator_block(self.input_shape, 16, bn=False),
+            *discriminator_block(self.input_shape[0], 16, bn=False),
             *discriminator_block(16, 32),
             *discriminator_block(32, 64),
             *discriminator_block(64, 128),
         )
 
         # The height and width of downsampled image
-        ds_size = self.input_shape // 2 ** 4
+        ds_size = self.input_shape[1] // 2 ** 4
         self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
 
     def forward(self, img):
