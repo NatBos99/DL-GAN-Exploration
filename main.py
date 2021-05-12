@@ -15,6 +15,10 @@ def set_up(args):
         data = torchvision.datasets.CIFAR10(root="Datasets/cifar-10-batches-py",
                                             download=True,
                                             transform=ToTensor())
+    elif args.dataset == "MNIST":
+        data = torchvision.datasets.MNIST(root="Datasets/MNIST",
+                                            download=True,
+                                            transform=ToTensor())
     else:
         raise NotImplementedError
 
@@ -37,7 +41,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Simple GAN implementation"
     )
-    parser.add_argument('--dataset', type=str, default="CIFAR10",
+    parser.add_argument('--dataset', type=str, default="MNIST",
                         help='options are as follows: "CIFAR10", ')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
 
