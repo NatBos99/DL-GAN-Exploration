@@ -65,7 +65,6 @@ class GAN(pl.LightningModule):
 
             return dis_loss
 
-
     def configure_optimizers(self):
         # https://pytorch-lightning.readthedocs.io/en/latest/common/optimizers.html#use-multiple-optimizers-like-gans
         gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr,
@@ -73,8 +72,6 @@ class GAN(pl.LightningModule):
         dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr,
                                  betas=(self.hparams.b1, self.hparams.b2))
         return gen_opt, dis_opt
-
-
 
     def on_epoch_end(self):
         """

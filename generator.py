@@ -17,8 +17,7 @@ class GeneratorCNN(nn.Module):
         self.init_height = image_shape[2] // 4
 
 
-        self.linear_layer = nn.Sequential(nn.Linear(latent_dim,
-                                                    starting_layer_dim * self.init_width * self.init_height))
+        self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
 
         self.conv_blocks = nn.Sequential(
