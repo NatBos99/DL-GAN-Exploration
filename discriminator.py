@@ -6,7 +6,7 @@ class DiscriminatorCNN(nn.Module):
     """
     D(x | theta)
     """
-    def __init__(self, input_shape, dims):
+    def __init__(self, input_shape):
         super().__init__()
 
         self.input_shape = input_shape
@@ -18,19 +18,18 @@ class DiscriminatorCNN(nn.Module):
             return block
 
         self.model = nn.Sequential(
-            nn.Linear(image_size, 512),
-            nn.LeakyReLU(negative_slope=0.2),
-            nn.Linear(512, 256),
-            nn.LeakyReLU(negative_slope=0.2),
-            nn.Linear(256, 1),
-            nn.Sigmoid(),
+            *discriminator_block(self.input_shape, 16, bn=False),
+            *discriminator_block(16, 32),
+            *discriminator_block(32, 64),
+            *discriminator_block(64, 128),
         )
 
+        # The height and width of downsampled image
+        ds_size = self.input_shape // 2 ** 4
+        self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+
     def forward(self, img):
-        """
-        img  - raw img
-        :return:
-        """
-        img_flattened = img.view(img.size(0), -1)
-        img = self.model(img_flattened)
-        return img
+        out = self.model(img)
+        out = out.view(out.shape[0], -1)
+        validity = self.adv_layer(out)
+        return validity
