@@ -45,7 +45,8 @@ def set_up(args):
 
 def train(args, generator, discriminator, data_loader):
     model = GAN(generator, discriminator, batch_size=args.batch_size)
-    trainer = pl.Trainer(gpus=None, max_epochs=args.n_epoch,
+    gpus = 1 if torch.cuda.is_available() else None
+    trainer = pl.Trainer(gpus=gpus, max_epochs=args.n_epoch,
                          progress_bar_refresh_rate=20)
     trainer.fit(model, data_loader)
 
