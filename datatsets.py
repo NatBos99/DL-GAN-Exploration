@@ -15,11 +15,13 @@ def get_dataset(args):
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
 
     elif args.dataset == "MNIST":
-        new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
-        MNIST.resources = [
-            ('/'.join([new_mirror, url.split('/')[-1]]), md5)
-            for url, md5 in MNIST.resources
-        ]
+        if args.custom_mnist_download:
+            print("Runs this?")
+            new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
+            MNIST.resources = [
+                ('/'.join([new_mirror, url.split('/')[-1]]), md5)
+                for url, md5 in MNIST.resources
+            ]
         train = MNIST(root="Datasets/MNIST",
                       download=True,
                       transform=transforms.Compose(

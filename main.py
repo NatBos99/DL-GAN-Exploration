@@ -9,7 +9,7 @@ from torchvision import transforms
 import pytorch_lightning as pl
 
 from GAN import GAN
-from generator import GeneratorCNN
+from generator import GeneratorCNN, GeneratorTransformer
 from discriminator import DiscriminatorCNN
 from datatsets import get_dataset
 
@@ -42,12 +42,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--train_valid_split', type=float, default=0.9,
                         help='Training validation split in favor of training set')
+    parser.add_argument('--custom_mnist_download', dest="custom_mnist_download",
+                        action="store_true", help="Use in case the base approach does not work")
 
     args = parser.parse_args()
 
     train, valid, test, img_shape = get_dataset(args)
 
-    gen = GeneratorCNN(img_shape, args.latent_dim)
+    gen = GeneratorTransformer(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape)
 
     training(args, gen, dis, train, valid)
