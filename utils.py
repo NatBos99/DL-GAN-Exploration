@@ -38,6 +38,9 @@ def get_args(
     parser.add_argument('--train_valid_split', type=float, default=train_valid_split,
                         help='Training validation split in favor of training set')
 
+    parser.add_argument('--custom_mnist_download', dest="custom_mnist_download",
+                        action="store_true", help="Use in case the base approach does not work")
+
     args = parser.parse_args()
 
     return args
