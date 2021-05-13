@@ -9,7 +9,7 @@ from torchvision import transforms
 import pytorch_lightning as pl
 
 from GAN import GAN
-from generator import GeneratorCNN
+from generator import GeneratorCNN, GeneratorTransformer
 from discriminator import DiscriminatorCNN
 from datatsets import get_dataset
 from utils import get_args
@@ -26,11 +26,10 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 if __name__ == "__main__":
     args = get_args()
 
-
     # training
     train, valid, test, img_shape = get_dataset(args)
 
-    gen = GeneratorCNN(img_shape, args.latent_dim)
+    gen = GeneratorTransformer(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape)
 
     # checkpoint_callback = pl.ModelCheckpoint(

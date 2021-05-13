@@ -134,3 +134,6 @@ dmypy.json
 
 # Torchvision datasets dir
 Datasets/
+
+# Lightning logs
+lightning_logs/
