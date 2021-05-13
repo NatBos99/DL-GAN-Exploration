@@ -35,11 +35,11 @@ def get_dataset(args):
                          [transforms.Resize(args.image_size), transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])]),
                      )
-    elif args.dataset == "Fahsion-MNIST":
-        train = FashionMNIST(root="Datasets/Fahsion-MNIST",
+    elif args.dataset == "FashionMNIST":
+        train = FashionMNIST(root="Datasets/FashionMNIST",
                         download=True,
                         transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = FashionMNIST(root="Datasets/Fahsion-MNIST",
+        test = FashionMNIST(root="Datasets/FashionMNIST",
                        download=True,
                        train=False,
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
