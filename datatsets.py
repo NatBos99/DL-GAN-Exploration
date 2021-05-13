@@ -2,9 +2,11 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, CelebA
 from torchvision import transforms
+import logging
 
 
 def get_dataset(args):
+    logging.info('Loading {} dataset'.format(args.dataset))
     if args.dataset == "CIFAR10":
         train = CIFAR10(root="Datasets/cifar-10-batches-py",
                         download=True,
