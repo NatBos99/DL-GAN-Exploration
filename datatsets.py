@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, random_split
-from torchvision.datasets import CIFAR10, MNIST
+from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, CelebA
 from torchvision import transforms
 
 
@@ -33,6 +33,24 @@ def get_dataset(args):
                          [transforms.Resize(args.image_size), transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])]),
                      )
+    elif args.dataset == "Fahsion-MNIST":
+        train = FashionMNIST(root="Datasets/Fahsion-MNIST",
+                        download=True,
+                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+        test = FashionMNIST(root="Datasets/Fahsion-MNIST",
+                       download=True,
+                       train=False,
+                       transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+
+    elif args.dataset == "CelebA":
+        train = CelebA(root="Datasets/CelebA",
+                        download=True,
+                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+        test = CelebA(root="Datasets/CelebA",
+                       download=True,
+                       train=False,
+                       transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+
     else:
         raise NotImplementedError('Unknown dataset')
 

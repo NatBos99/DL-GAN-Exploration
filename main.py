@@ -27,7 +27,7 @@ if __name__ == "__main__":
         description="Simple GAN implementation"
     )
     parser.add_argument('--dataset', type=str, default="MNIST",
-                        help='options are as follows: "CIFAR10", ')
+                        help='options are as follows: "CIFAR10", MNIST, Fahsion-MNIST, CelebA')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
 
     parser.add_argument('--n_epoch', type=int, default=2,
