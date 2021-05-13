@@ -2,9 +2,11 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, CelebA
 from torchvision import transforms
+import logging
 
 
 def get_dataset(args):
+    logging.info('Loading {} dataset'.format(args.dataset))
     if args.dataset == "CIFAR10":
         train = CIFAR10(root="Datasets/cifar-10-batches-py",
                         download=True,
@@ -35,11 +37,11 @@ def get_dataset(args):
                          [transforms.Resize(args.image_size), transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])]),
                      )
-    elif args.dataset == "Fahsion-MNIST":
-        train = FashionMNIST(root="Datasets/Fahsion-MNIST",
+    elif args.dataset == "FashionMNIST":
+        train = FashionMNIST(root="Datasets/FashionMNIST",
                         download=True,
                         transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = FashionMNIST(root="Datasets/Fahsion-MNIST",
+        test = FashionMNIST(root="Datasets/FashionMNIST",
                        download=True,
                        train=False,
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
