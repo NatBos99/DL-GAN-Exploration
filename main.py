@@ -40,5 +40,5 @@ if __name__ == "__main__":
                         save_top_k=5,
                         mode='min',
                     )
-    checkpoint_callback = 1
+
     training(args, gen, dis, train, valid, checkpoint_callback)
