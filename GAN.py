@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import pytorch_lightning as pl
-
+from utils import compute_FID
 
 class GAN(pl.LightningModule):
     def __init__(
@@ -15,9 +15,11 @@ class GAN(pl.LightningModule):
             batch_size: int = 32,
             b1: float = 0.5,
             b2: float = 0.999,
+            dataset: str = "MNIST",
+            FID_dim: int = 64
     ):
         super().__init__()
-        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_dim')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -27,6 +29,8 @@ class GAN(pl.LightningModule):
         # this is used for tracing, I think to ensure that your dimensions are as expected
         # TODO figure out proper dim
         # self.example_input_array = torch.zeros()
+
+        self.dataset = dataset
 
     def forward(self, z):
         return self.generator(z)
@@ -86,3 +90,7 @@ class GAN(pl.LightningModule):
         grid = torchvision.utils.make_grid(gen_imgs)
         # write generated images to tensorboard using the manual logger of pl
         self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
+
+        if self.current_epoch % 5 == 0:
+            FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
+            self.log('FID', FID)

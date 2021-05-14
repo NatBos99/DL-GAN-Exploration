@@ -2,6 +2,7 @@ import argparse
 import os
 import time
 import struct
+import shutil
 from array import array
 import numpy as np
 import cv2
@@ -13,7 +14,8 @@ from datatsets import get_dataset
 MY_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DATASET_DIR = {"MNIST": os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
-               "FashionMNIST": os.path.join(MY_PATH, "Datasets/FashionMNIST/FashionMNIST/raw/t10k-images-idx3-ubyte")
+               "FashionMNIST": os.path.join(MY_PATH, "Datasets/FashionMNIST/FashionMNIST/raw/t10k-images-idx3-ubyte"),
+                "MNIST_128":  os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte")
                 }
 
 def get_args(
@@ -25,6 +27,7 @@ def get_args(
             image_size: int = 32,
             train_valid_split: float = 0.9,
             fid_max_data: int = 10000,
+            no_validation_images: int = 16
             ):
     # cli arguments
     parser = argparse.ArgumentParser(
@@ -58,6 +61,10 @@ def get_args(
     parser.add_argument('--dis_hidden', type=int, default=16,
                         help="Number of channels in first block of convolutional discriminator, doubles with each block.")
 
+    parser.add_argument('--no_validation_images', type=int, default=no_validation_images,
+                        help="Number of validation images to create")
+
+
     args = parser.parse_args()
 
     return args
@@ -88,7 +95,9 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     :return: path to directory
     """
     # Create Dir if it does not exist
-    os.makedirs(dir_name, exist_ok=True)
+    if os.path.exists(dir_name):
+        shutil.rmtree(dir_name)
+        os.makedirs(dir_name, exist_ok=True)
 
     # unpack sensor?
     for img in Tensors:
@@ -96,26 +105,28 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
 
     return dir_name
 
-def compute_FID(imgs, args, device, dims):
+
+def compute_FID(imgs, dataset, batch_size, device, dims):
     """
     TODO: this function only currently can work with the MNIST datasets
     :param imgs:
-    :param args:
+    :param batch_size:
+    :param dataset:
     :param device:
     :param dims:
     :return:
     """
     fake_path = create_dir_from_tensors(imgs)
 
-    dataset_src = DATASET_DIR[args.dataset]
-    dataset_dest = os.path.join(MY_PATH, "FID_TESTING/{args.dataset}")
+    dataset_src = DATASET_DIR[dataset]
+    dataset_dest = os.path.join(MY_PATH, f"FID_TESTING/{dataset}")
 
     if not os.path.exists(dataset_dest):
         os.makedirs(dataset_dest)
-        create_images_from_ubyte(dataset_src, dataset_dest, args.dataset)
+        create_images_from_ubyte(dataset_src, dataset_dest, dataset)
 
     paths = [fake_path, dataset_dest]
-    fid = fid_score.calculate_fid_given_paths(paths, args.batch_size, device, dims)
+    fid = fid_score.calculate_fid_given_paths(paths, batch_size, device, dims)
 
     return fid
 if __name__ == "__main__":
