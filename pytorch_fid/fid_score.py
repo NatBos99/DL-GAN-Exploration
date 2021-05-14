@@ -109,7 +109,7 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu', data_l
     # if batch_size > len(files):
     #     print(('Warning: batch size is bigger than the data size. '
     #            'Setting batch size to data size'))
-        # batch_size = len(files)
+    #     # batch_size = len(files)
 
     if data_loader is None:
         dataset = ImagePathDataset(files, transforms=TF.ToTensor())
@@ -118,8 +118,10 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu', data_l
                                              shuffle=False,
                                              drop_last=False,
                                              num_workers=cpu_count())
-
-    pred_arr = np.empty((len(files), dims))
+        number_of_files = len(files)
+    else:
+        number_of_files = len(data_loader.dataset.dataset)
+    pred_arr = np.empty((number_of_files, dims))
 
     start_idx = 0
 
@@ -251,7 +253,7 @@ def calculate_fid_given_paths(paths, batch_size, device, dims, dataloader=None):
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
-    model = InceptionV3([block_idx], resize_input=False).to(device)
+    model = InceptionV3([block_idx]).to(device)
     
     m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
                                         dims, device)

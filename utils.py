@@ -1,21 +1,30 @@
 import argparse
 import os
 import time
-
+import struct
+from array import array
+import numpy as np
+import cv2
 import torch
 from pytorch_fid import fid_score
 from torchvision.utils import save_image
 from datatsets import get_dataset
 
+MY_PATH = os.path.abspath(os.path.dirname(__file__))
+
+DATASET_DIR = {"MNIST": os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
+               "FashionMNIST": os.path.join(MY_PATH, "Datasets/FashionMNIST/FashionMNIST/raw/t10k-images-idx3-ubyte")
+                }
 
 def get_args(
-            dataset="MNIST",
-            batch_size=32,
-            n_epoch=2,
-            shuffle=True,
-            latent_dim=100,
-            image_size=32,
-            train_valid_split=0.9
+            dataset: str = "MNIST",
+            batch_size: int = 32,
+            n_epoch: int = 2,
+            shuffle: bool = True,
+            latent_dim: int = 100,
+            image_size: int = 32,
+            train_valid_split: float = 0.9,
+            fid_max_data: int = 10000,
             ):
     # cli arguments
     parser = argparse.ArgumentParser(
@@ -46,9 +55,30 @@ def get_args(
     parser.add_argument('--num_workers', type=int, default=4,
                          help="How many CPU workers should dataloaders use.")
 
+    parser.add_argument('--fid_max_data', type=float, default=fid_max_data,
+                        help='The max number of images we use from the real data to use FID for')
+
     args = parser.parse_args()
 
     return args
+
+
+def create_images_from_ubyte(src, dest, dataset):
+    """
+
+    :param src:
+    :param dest:
+    :return:
+    """
+    with open(src, 'rb') as file:
+        magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
+        image_data = array("B", file.read())
+
+    images = np.zeros((size, rows, cols))
+
+    for i in range(size):
+        images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
+        cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
 def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     """
@@ -59,27 +89,41 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     """
     # Create Dir if it does not exist
     os.makedirs(dir_name, exist_ok=True)
+
     # unpack sensor?
     for img in Tensors:
         save_image(img, f'{dir_name}/gen-img{time.time():.20f}.png')
 
     return dir_name
 
-def compute_FID(imgs, args, device, dims, valid_loader):
+def compute_FID(imgs, args, device, dims):
+    """
+    TODO: this function only currently can work with the MNIST datasets
+    :param imgs:
+    :param args:
+    :param device:
+    :param dims:
+    :return:
+    """
     fake_path = create_dir_from_tensors(imgs)
 
-    real_img_path = f"Datasets/{args.dataset}/{args.dataset}/processed"
+    dataset_src = DATASET_DIR[args.dataset]
+    dataset_dest = os.path.join(MY_PATH, "FID_TESTING/{args.dataset}")
 
-    paths = [fake_path, real_img_path]
-    fid_score.calculate_fid_given_paths(paths, args.batch_size, device, dims, valid_loader)
+    if not os.path.exists(dataset_dest):
+        os.makedirs(dataset_dest)
+        create_images_from_ubyte(dataset_src, dataset_dest, args.dataset)
 
+    paths = [fake_path, dataset_dest]
+    fid = fid_score.calculate_fid_given_paths(paths, args.batch_size, device, dims)
 
+    return fid
 if __name__ == "__main__":
-
-    args = get_args(batch_size=16)
-
+    dataset = "MNIST"
+    args = get_args(batch_size=32, dataset=dataset)
     train_loader, valid_loader, test_loader, img_shape = get_dataset(args)
-    imgs = torch.randn(32, 1, 32, 32).type(torch.float32)
 
-    compute_FID(imgs, args, 'cpu', 192, valid_loader)
-    # {64: 0, 192: 1, 768: 2, 2048: 3}
+    imgs = torch.randn(16, 1, 32, 32).type(torch.float32)
+
+    fid = compute_FID(imgs, args, 'cpu', 64)
+    print(fid)

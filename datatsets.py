@@ -8,10 +8,10 @@ import logging
 def get_dataset(args):
     logging.info('Loading {} dataset'.format(args.dataset))
     if args.dataset == "CIFAR10":
-        train = CIFAR10(root="Datasets/cifar-10-batches-py",
+        train = CIFAR10(root="Datasets/",
                         download=True,
                         transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = CIFAR10(root="Datasets/cifar-10-batches-py",
+        test = CIFAR10(root="Datasets/",
                        download=True,
                        train=False,
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
@@ -29,7 +29,7 @@ def get_dataset(args):
                           [transforms.Resize(args.image_size), transforms.ToTensor(),
                            transforms.Normalize([0.5], [0.5])]),
                       )
-        test = MNIST(root="Datasets/MNIST",
+        test = MNIST(root="Datasets/",
                      download=True,
                      train=False,
                      transform=transforms.Compose(
@@ -44,11 +44,11 @@ def get_dataset(args):
                 ('/'.join([new_mirror, url.split('/')[-1]]), md5)
                 for url, md5 in MNIST.resources
             ]
-        train = MNIST(root="Datasets/MNIST",
+        train = MNIST(root="Datasets/",
                       download=True,
                       transform=transforms.Compose(
                           [transforms.Resize(args.image_size), transforms.ToTensor(),
-                           transforms.Normalize([0.5], [0.5])]),
+                           transforms.Normalize([0.5], [0.5])])
                       )
         train.data = train.data[:128]
         train.targets = train.targets[:128]
@@ -56,23 +56,24 @@ def get_dataset(args):
                      download=True,
                      train=False,
                      transform=transforms.Compose(
-                         [transforms.Resize(args.image_size), transforms.ToTensor(),
-                          transforms.Normalize([0.5], [0.5])]),
+                         [transforms.Resize(args.image_size), transforms.Grayscale(3), transforms.ToTensor(),
+                          transforms.Normalize([0.5], [0.5])])
                      )
+
     elif args.dataset == "FashionMNIST":
-        train = FashionMNIST(root="Datasets/FashionMNIST",
+        train = FashionMNIST(root="Datasets/",
                         download=True,
                         transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = FashionMNIST(root="Datasets/FashionMNIST",
+        test = FashionMNIST(root="Datasets/",
                        download=True,
                        train=False,
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
 
     elif args.dataset == "CelebA":
-        train = CelebA(root="Datasets/CelebA",
+        train = CelebA(root="Datasets/",
                         download=True,
                         transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = CelebA(root="Datasets/CelebA",
+        test = CelebA(root="Datasets/",
                        download=True,
                        train=False,
                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
@@ -96,6 +97,7 @@ def get_dataset(args):
                               shuffle=args.shuffle,
                               num_workers=args.num_workers
                               )
+
     test_loader = DataLoader(test,
                              batch_size=args.batch_size,
                              shuffle=args.shuffle,
