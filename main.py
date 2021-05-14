@@ -30,7 +30,7 @@ if __name__ == "__main__":
     train, valid, test, img_shape = get_dataset(args)
 
     gen = GeneratorTransformer(img_shape, args.latent_dim)
-    dis = DiscriminatorCNN(img_shape)
+    dis = DiscriminatorCNN(img_shape, args.dis_hidden)
 
     # checkpoint_callback = pl.ModelCheckpoint(
     #                     monitor='FID',
