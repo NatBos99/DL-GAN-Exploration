@@ -43,6 +43,8 @@ def get_args(
 
     parser.add_argument('--custom_mnist_download', dest="custom_mnist_download",
                         action="store_true", help="Use in case the base approach does not work")
+    parser.add_argument('--num_workers', type=int, default=4,
+                         help="How many CPU workers should dataloaders use.")
 
     args = parser.parse_args()
 
