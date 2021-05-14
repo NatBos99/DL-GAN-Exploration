@@ -34,7 +34,10 @@ def get_args(
 
     parser.add_argument('--image_size', type=int, default=image_size,
                         help='')
-
+    parser.add_argument('--lr_gen', type=float, default=1E-3,
+                        help='Learning rate for the generator')
+    parser.add_argument('--lr_dis', type=float, default=1E-3,
+                        help='Learning rate for the discriminator')
     parser.add_argument('--train_valid_split', type=float, default=train_valid_split,
                         help='Training validation split in favor of training set')
 

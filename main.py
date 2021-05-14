@@ -16,7 +16,7 @@ from utils import get_args
 
 
 def training(args, generator, discriminator, train_loader, valid_loader, checkpoint_callback):
-    model = GAN(generator, discriminator, batch_size=args.batch_size)
+    model = GAN(generator, discriminator, lr_gen=args.lr_gen, lr_dis=args.lr_dis, batch_size=args.batch_size)
     gpus = 1 if torch.cuda.is_available() else None
     trainer = pl.Trainer(gpus=gpus, max_epochs=args.n_epoch,
                          progress_bar_refresh_rate=20) # callbacks=[checkpoint_callback]

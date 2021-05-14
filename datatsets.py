@@ -18,7 +18,6 @@ def get_dataset(args):
 
     elif args.dataset == "MNIST":
         if args.custom_mnist_download:
-            print("Runs this?")
             new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
             MNIST.resources = [
                 ('/'.join([new_mirror, url.split('/')[-1]]), md5)

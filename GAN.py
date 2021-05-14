@@ -10,13 +10,14 @@ class GAN(pl.LightningModule):
             generator_class,
             discriminator_class,
             no_validation_images: int = 10,
-            lr: float = 1E-3,
+            lr_gen: float = 1E-3,
+            lr_dis: float = 1E-3,
             batch_size: int = 32,
             b1: float = 0.5,
             b2: float = 0.999,
     ):
         super().__init__()
-        self.save_hyperparameters('lr', 'batch_size', 'b1', 'b2')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -43,14 +44,14 @@ class GAN(pl.LightningModule):
         :return:
         """
 
-        real_imgs, _ = batch # we do not need the actual class
+        real_imgs, _ = batch  # we do not need the actual class
 
         z = torch.randn(real_imgs.shape[0], self.generator.latent_dim).type_as(real_imgs)
         real = torch.ones(real_imgs.size(0), 1).type_as(real_imgs)
 
         # train generator
         if optimizer_idx == 0:
-            gen_imgs = self(z) # this calls the forward pass
+            gen_imgs = self(z)  # this calls the forward pass
             g_loss = self.adversarial_loss(self.discriminator(gen_imgs), real)
             return g_loss
 
@@ -58,7 +59,7 @@ class GAN(pl.LightningModule):
         if optimizer_idx == 1:
             fake = torch.zeros(real_imgs.size(0), 1).type_as(real_imgs)
 
-            gen_imgs = self(z) # this calls the forward pass
+            gen_imgs = self(z)  # this calls the forward pass
             real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
             fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
 
@@ -68,10 +69,10 @@ class GAN(pl.LightningModule):
 
     def configure_optimizers(self):
         # https://pytorch-lightning.readthedocs.io/en/latest/common/optimizers.html#use-multiple-optimizers-like-gans
-        gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr,
-                                 betas=(self.hparams.b1, self.hparams.b2))
-        dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr,
-                                 betas=(self.hparams.b1, self.hparams.b2))
+        gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen,
+                                   betas=(self.hparams.b1, self.hparams.b2))
+        dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis,
+                                   betas=(self.hparams.b1, self.hparams.b2))
         return gen_opt, dis_opt
 
     def on_epoch_end(self):
