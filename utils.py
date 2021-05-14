@@ -46,6 +46,9 @@ def get_args(
     parser.add_argument('--num_workers', type=int, default=4,
                          help="How many CPU workers should dataloaders use.")
 
+    parser.add_argument('--dis_hidden', type=int, default=16,
+                        help="Number of channels in first block of convolutional discriminator, doubles with each block.")
+
     args = parser.parse_args()
 
     return args
