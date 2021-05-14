@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-import numpy as np
 import math
+import warnings
+
 
 class GeneratorCNN(nn.Module):
     """
@@ -18,9 +19,7 @@ class GeneratorCNN(nn.Module):
         self.init_width = image_shape[1] // 4
         self.init_height = image_shape[2] // 4
 
-
-        self.linear_layer = nn.Linear(latent_dim,
-                                      starting_layer_dim * self.init_width * self.init_height)
+        self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
 
         self.conv_blocks = nn.Sequential(
@@ -49,6 +48,7 @@ class GeneratorCNN(nn.Module):
         out = out.view(out.shape[0], self.starting_layer_dim, self.init_width, self.init_height)
         img = self.conv_blocks(out)
         return img
+
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
     # Cut & paste from PyTorch official master until it's in a few official releases - RW
@@ -85,6 +85,7 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
         tensor.clamp_(min=a, max=b)
         return tensor
 
+
 def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     # type: (Tensor, float, float, float, float) -> Tensor
     r"""Fills the input Tensor with values drawn from a truncated
@@ -105,6 +106,7 @@ def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     """
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
+
 def pixel_upsample(x, H, W):
     B, N, C = x.size()
     assert N == H*W
@@ -116,12 +118,13 @@ def pixel_upsample(x, H, W):
     x = x.permute(0,2,1)
     return x, H, W
 
+
 class GeneratorTransformer(nn.Module):
     """
     G(z|theta)
     """
     def __init__(self,
-                 image_shape, #channels x width x height
+                 image_shape,  # channels x width x height
                  latent_dim,
                  starting_layer_dim: int = 128
                  ):
@@ -131,9 +134,7 @@ class GeneratorTransformer(nn.Module):
         self.init_width = image_shape[1] // 4
         self.init_height = image_shape[2] // 4
 
-
-        self.linear_layer = nn.Linear(latent_dim,
-                                      starting_layer_dim * self.init_width * self.init_height)
+        self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
         self.pos_embed_1 = nn.Parameter(torch.zeros(1, self.init_width**2, starting_layer_dim))
         self.pos_embed_2 = nn.Parameter(torch.zeros(1, (2*self.init_width)**2, starting_layer_dim//4))
@@ -179,6 +180,7 @@ class GeneratorTransformer(nn.Module):
 
         out = self.deconv(out.permute(0, 2, 1).view(-1, self.starting_layer_dim//16, H, W))
         return out
+
 
 if __name__ == "__main__":
     a = GeneratorCNN((1, 28, 28), 100)

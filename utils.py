@@ -71,10 +71,10 @@ def compute_FID(imgs, args, device, dims, valid_loader):
 
 if __name__ == "__main__":
 
-    args = get_args(batch_size=32)
+    args = get_args(batch_size=16)
 
     train_loader, valid_loader, test_loader, img_shape = get_dataset(args)
-    imgs = torch.randn(16, 1, 32, 32).type(torch.float32)
+    imgs = torch.randn(32, 1, 32, 32).type(torch.float32)
 
     compute_FID(imgs, args, 'cpu', 192, valid_loader)
     # {64: 0, 192: 1, 768: 2, 2048: 3}

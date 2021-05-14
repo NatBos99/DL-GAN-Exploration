@@ -106,13 +106,13 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu', data_l
     """
     model.eval()
 
-    if batch_size > len(files):
-        print(('Warning: batch size is bigger than the data size. '
-               'Setting batch size to data size'))
+    # if batch_size > len(files):
+    #     print(('Warning: batch size is bigger than the data size. '
+    #            'Setting batch size to data size'))
         # batch_size = len(files)
 
-    dataset = ImagePathDataset(files, transforms=TF.ToTensor())
     if data_loader is None:
+        dataset = ImagePathDataset(files, transforms=TF.ToTensor())
         data_loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=False,
@@ -251,7 +251,7 @@ def calculate_fid_given_paths(paths, batch_size, device, dims, dataloader=None):
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
-    model = InceptionV3([block_idx]).to(device)
+    model = InceptionV3([block_idx], resize_input=False).to(device)
     
     m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
                                         dims, device)

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torchvision
 import pytorch_lightning as pl
 
+
 class GAN(pl.LightningModule):
     def __init__(
             self,
