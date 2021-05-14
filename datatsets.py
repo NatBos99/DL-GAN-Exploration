@@ -36,6 +36,29 @@ def get_dataset(args):
                          [transforms.Resize(args.image_size), transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])]),
                      )
+
+    elif args.dataset == "MNIST_128":
+        if args.custom_mnist_download:
+            new_mirror = 'https://ossci-datasets.s3.amazonaws.com/mnist'
+            MNIST.resources = [
+                ('/'.join([new_mirror, url.split('/')[-1]]), md5)
+                for url, md5 in MNIST.resources
+            ]
+        train = MNIST(root="Datasets/MNIST",
+                      download=True,
+                      transform=transforms.Compose(
+                          [transforms.Resize(args.image_size), transforms.ToTensor(),
+                           transforms.Normalize([0.5], [0.5])]),
+                      )
+        train.data = train.data[:128]
+        train.targets = train.targets[:128]
+        test = MNIST(root="Datasets/MNIST",
+                     download=True,
+                     train=False,
+                     transform=transforms.Compose(
+                         [transforms.Resize(args.image_size), transforms.ToTensor(),
+                          transforms.Normalize([0.5], [0.5])]),
+                     )
     elif args.dataset == "FashionMNIST":
         train = FashionMNIST(root="Datasets/FashionMNIST",
                         download=True,
@@ -66,14 +89,17 @@ def get_dataset(args):
     train_loader = DataLoader(train,
                               batch_size=args.batch_size,
                               shuffle=args.shuffle,
+                              num_workers=args.num_workers
                               )
     valid_loader = DataLoader(validation,
                               batch_size=args.batch_size,
                               shuffle=args.shuffle,
+                              num_workers=args.num_workers
                               )
     test_loader = DataLoader(test,
                              batch_size=args.batch_size,
                              shuffle=args.shuffle,
+                             num_workers=args.num_workers
                              )
 
     return train_loader, valid_loader, test_loader, tuple(img_shape)
