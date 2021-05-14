@@ -85,4 +85,4 @@ class GAN(pl.LightningModule):
         # gen_imgs = self(self.validation_z)
         grid = torchvision.utils.make_grid(gen_imgs)
         # write generated images to tensorboard using the manual logger of pl
-        self.logger.experiment.add_image('generated_images', grid, self.current_epoch)
+        self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
