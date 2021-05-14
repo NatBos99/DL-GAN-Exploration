@@ -16,7 +16,7 @@ class GeneratorCNN(nn.Module):
                  latent_dim,
                  starting_layer_dim: int = 128
                  ):
-        super().__init__()
+        super(GeneratorCNN, self).__init__()
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
         self.init_width = image_shape[1] // 4
@@ -39,6 +39,10 @@ class GeneratorCNN(nn.Module):
         )
 
         self.image_shape = image_shape
+
+    def __name__(self):
+        return "GeneratorCNN"
+
 
     def forward(self, z):
         """
@@ -165,6 +169,9 @@ class GeneratorTransformer(nn.Module):
         )
 
         self.image_shape = image_shape
+
+    def __name__(self):
+        return "GeneratorTransformer"
 
     def forward(self, z):
         """

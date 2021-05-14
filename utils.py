@@ -31,7 +31,7 @@ def get_args(
         description="Simple GAN implementation"
     )
     parser.add_argument('--dataset', type=str, default=dataset,
-                        help='options are as follows: "CIFAR10", MNIST, FashionMNIST, CelebA')
+                        help='options are as follows: "CIFAR10", MNIST, MNIST_128, FashionMNIST, CelebA')
     parser.add_argument('--batch_size', type=int, default=batch_size, help='batch size')
 
     parser.add_argument('--n_epoch', type=int, default=n_epoch,

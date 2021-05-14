@@ -7,7 +7,7 @@ from torchvision.datasets import CIFAR10, MNIST
 from torchvision import transforms
 
 import pytorch_lightning as pl
-
+from pytorch_lightning.callbacks import ModelCheckpoint
 from GAN import GAN
 from generator import GeneratorCNN, GeneratorTransformer
 from discriminator import DiscriminatorCNN
@@ -24,20 +24,21 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args()
+    args = get_args(dataset="MNIST_128")
 
     # training
     train, valid, test, img_shape = get_dataset(args)
 
-    gen = GeneratorTransformer(img_shape, args.latent_dim)
+    # gen = GeneratorTransformer(img_shape, args.latent_dim)
+    gen = GeneratorCNN(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape, args.dis_hidden)
 
-    # checkpoint_callback = pl.ModelCheckpoint(
-    #                     monitor='FID',
-    #                     dirpath='Checkpoints',
-    #                     filename=f'{gen.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
-    #                     save_top_k=5,
-    #                     mode='min',
-    #                 )
+    checkpoint_callback = ModelCheckpoint(
+                        monitor='FID',
+                        dirpath='Checkpoints',
+                        filename=f'{gen.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
+                        save_top_k=5,
+                        mode='min',
+                    )
     checkpoint_callback = 1
     training(args, gen, dis, train, valid, checkpoint_callback)

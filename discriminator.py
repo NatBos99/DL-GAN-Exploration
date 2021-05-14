@@ -28,6 +28,9 @@ class DiscriminatorCNN(nn.Module):
         ds_size = self.input_shape[1] // 2 ** 4
         self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 1), nn.Sigmoid())
 
+    def __name__(self):
+        return "DiscriminatorCNN"
+
     def forward(self, img):
         out = self.model(img)
         out = out.view(out.shape[0], -1)
