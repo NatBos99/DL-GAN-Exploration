@@ -3,7 +3,11 @@ import os
 import time
 import struct
 import shutil
+# import _pickle as cPickle
+import pickle
 from array import array
+
+
 import numpy as np
 import cv2
 import torch
@@ -15,8 +19,12 @@ MY_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DATASET_DIR = {"MNIST": os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
                "FashionMNIST": os.path.join(MY_PATH, "Datasets/FashionMNIST/FashionMNIST/raw/t10k-images-idx3-ubyte"),
-                "MNIST_128":  os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte")
+                "MNIST_128":  os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
+                "CIFAR10":  os.path.join(MY_PATH, "Datasets/cifar-10-batches-py/data_batch_1")
                 }
+UBYTE_DATASETS = ["MNIST", "FashionMNIST", "MNIST_128"]
+
+
 
 def get_args(
             dataset: str = "MNIST",
@@ -87,6 +95,20 @@ def create_images_from_ubyte(src, dest, dataset):
         images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
+def create_images_from_pickle_py(src, dest, dataset):
+    with open(src, 'rb') as file:
+        dict = pickle.load(file, encoding='latin1')
+        images = dict['data'].reshape(-1, 3, 32, 32)
+
+    for i in range(images.shape[0]):
+        # reshape for cv write so that the channel is the last dim
+        img = images[i].transpose(1, 2, 0)
+
+        # array is RGB. cv2 needs BGR
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', img)
+
+
 def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     """
 
@@ -97,7 +119,7 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     # Create Dir if it does not exist
     if os.path.exists(dir_name):
         shutil.rmtree(dir_name)
-        os.makedirs(dir_name, exist_ok=True)
+    os.makedirs(dir_name, exist_ok=True)
 
     # unpack sensor?
     for img in Tensors:
@@ -123,18 +145,31 @@ def compute_FID(imgs, dataset, batch_size, device, dims):
 
     if not os.path.exists(dataset_dest):
         os.makedirs(dataset_dest)
-        create_images_from_ubyte(dataset_src, dataset_dest, dataset)
+
+        if dataset in UBYTE_DATASETS:
+            create_images_from_ubyte(dataset_src, dataset_dest, dataset)
+        elif dataset == "CIFAR10":
+            create_images_from_pickle_py(dataset_src, dataset_dest, dataset)
+        else:
+            raise NotImplementedError('Unknown dataset')
+
 
     paths = [fake_path, dataset_dest]
     fid = fid_score.calculate_fid_given_paths(paths, batch_size, device, dims)
 
     return fid
 if __name__ == "__main__":
-    dataset = "MNIST"
+    dataset = "CIFAR10"
     args = get_args(batch_size=32, dataset=dataset)
     train_loader, valid_loader, test_loader, img_shape = get_dataset(args)
 
     imgs = torch.randn(16, 1, 32, 32).type(torch.float32)
 
-    fid = compute_FID(imgs, args, 'cpu', 64)
+    fid = compute_FID(imgs, args, 'cuda', 64)
     print(fid)
+    # args = get_args(dataset="CIFAR10", n_epoch=20, no_validation_images=100)
+    #
+    # # training
+    # train, valid, test, img_shape = get_dataset(args)
+    # dest = "FID_TESTING/TEST_CIFAR10"
+    # create_images_from_pickle_py("Datasets/cifar-10-batches-py/data_batch_1", dest, "CIFAR10")

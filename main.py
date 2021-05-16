@@ -25,21 +25,21 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args(dataset="MNIST_128", n_epoch=20, no_validation_images=100)
+    args = get_args(dataset="CIFAR10", n_epoch=20, no_validation_images=100)
 
     # training
     train, valid, test, img_shape = get_dataset(args)
 
-    # gen = GeneratorTransformer(img_shape, args.latent_dim)
-    gen = GeneratorCNN(img_shape, args.latent_dim)
-    dis = DiscriminatorCNN(img_shape, args.dis_hidden)
-
-    checkpoint_callback = ModelCheckpoint(
-                        monitor='FID',
-                        dirpath='Checkpoints',
-                        filename=f'{gen.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
-                        save_top_k=5,
-                        mode='min',
-                    )
-
-    training(args, gen, dis, train, valid, checkpoint_callback)
+    # # gen = GeneratorTransformer(img_shape, args.latent_dim)
+    # gen = GeneratorCNN(img_shape, args.latent_dim)
+    # dis = DiscriminatorCNN(img_shape, args.dis_hidden)
+    #
+    # checkpoint_callback = ModelCheckpoint(
+    #                     monitor='FID',
+    #                     dirpath='Checkpoints',
+    #                     filename=f'{gen.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
+    #                     save_top_k=5,
+    #                     mode='min',
+    #                 )
+    #
+    # training(args, gen, dis, train, valid, checkpoint_callback)
