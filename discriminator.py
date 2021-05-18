@@ -8,7 +8,7 @@ class DiscriminatorCNN(nn.Module):
     """
     D(x | theta)
     """
-    def __init__(self, input_shape):
+    def __init__(self, input_shape, first_hidden_dim=16):
         super().__init__()
 
         self.input_shape = input_shape
@@ -27,15 +27,18 @@ class DiscriminatorCNN(nn.Module):
         # )
 
         self.model = nn.Sequential(
-            *discriminator_block(self.input_shape[0], 64, bn=False),
-            *discriminator_block(64, 128),
-            *discriminator_block(128, 256),
-            *discriminator_block(256, 256),
+            *discriminator_block(self.input_shape[0], first_hidden_dim, bn=False),
+            *discriminator_block(first_hidden_dim, first_hidden_dim * 2),
+            *discriminator_block(first_hidden_dim * 2, first_hidden_dim * 4),
+            *discriminator_block(first_hidden_dim * 4, first_hidden_dim * 8),
         )
 
         # The height and width of downsampled image
         ds_size = self.input_shape[1] // 2 ** 4
-        self.adv_layer = nn.Sequential(nn.ReLU(), nn.Linear(256 * ds_size ** 2, 1))#, nn.Sigmoid())
+        self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 1), nn.Sigmoid())
+
+    def __name__(self):
+        return "DiscriminatorCNN"
 
     def forward(self, img):
         out = self.model(img)

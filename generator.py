@@ -1,27 +1,28 @@
+from typing import List
+
 import torch
 import torch.nn as nn
-import numpy as np
 import math
+import warnings
+
 
 class GeneratorCNN(nn.Module):
     """
     G(z|theta)
     """
+
     def __init__(self,
-                 image_shape, #channels x width x height
+                 image_shape,  # channels x width x height
                  latent_dim,
                  starting_layer_dim: int = 128
                  ):
-        super().__init__()
+        super(GeneratorCNN, self).__init__()
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
         self.init_width = image_shape[1] // 4
         self.init_height = image_shape[2] // 4
 
-
-        self.linear_layer = nn.Linear(latent_dim,
-                                      starting_layer_dim * self.init_width * self.init_height)
-
+        self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),
@@ -37,8 +38,11 @@ class GeneratorCNN(nn.Module):
             nn.Tanh(),
         )
 
-
         self.image_shape = image_shape
+
+    def __name__(self):
+        return "GeneratorCNN"
+
 
     def forward(self, z):
         """
@@ -49,6 +53,7 @@ class GeneratorCNN(nn.Module):
         out = out.view(out.shape[0], self.starting_layer_dim, self.init_width, self.init_height)
         img = self.conv_blocks(out)
         return img
+
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
     # Cut & paste from PyTorch official master until it's in a few official releases - RW
@@ -85,6 +90,7 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
         tensor.clamp_(min=a, max=b)
         return tensor
 
+
 def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     # type: (Tensor, float, float, float, float) -> Tensor
     r"""Fills the input Tensor with values drawn from a truncated
@@ -105,61 +111,74 @@ def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     """
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
+
 def pixel_upsample(x, H, W):
     B, N, C = x.size()
-    assert N == H*W
+    assert N == H * W
     x = x.permute(0, 2, 1)
     x = x.view(-1, C, H, W)
     x = nn.PixelShuffle(2)(x)
     B, C, H, W = x.size()
-    x = x.view(-1, C, H*W)
-    x = x.permute(0,2,1)
+    x = x.view(-1, C, H * W)
+    x = x.permute(0, 2, 1)
     return x, H, W
+
 
 class GeneratorTransformer(nn.Module):
     """
     G(z|theta)
     """
+
     def __init__(self,
-                 image_shape, #channels x width x height
+                 image_shape,  # channels x width x height
                  latent_dim,
-                 starting_layer_dim: int = 64
+                 starting_layer_dim: int = 128,
+                 encoder_stack_dims: List[int] = None
                  ):
         super().__init__()
+        if encoder_stack_dims is None:
+            encoder_stack_dims = [5, 2, 2]
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
         self.init_width = image_shape[1] // 4
         self.init_height = image_shape[2] // 4
 
+        self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
-        self.linear_layer = nn.Linear(latent_dim,
-                                      starting_layer_dim * self.init_width * self.init_height)
-
-        self.pos_embed_1 = nn.Parameter(torch.zeros(1, self.init_width**2, starting_layer_dim))
-        self.pos_embed_2 = nn.Parameter(torch.zeros(1, (2*self.init_width)**2, starting_layer_dim//4))
-        self.pos_embed_3 = nn.Parameter(torch.zeros(1, (4*self.init_width)**2, starting_layer_dim//16))
+        self.pos_embed_1 = nn.Parameter(torch.zeros(1, self.init_width ** 2, starting_layer_dim))
+        self.pos_embed_2 = nn.Parameter(torch.zeros(1, (2 * self.init_width) ** 2, starting_layer_dim // 4))
+        self.pos_embed_3 = nn.Parameter(torch.zeros(1, (4 * self.init_width) ** 2, starting_layer_dim // 16))
 
         self.pos_embed = [self.pos_embed_1, self.pos_embed_2, self.pos_embed_3]
         for i in range(len(self.pos_embed)):
             trunc_normal_(self.pos_embed[i], std=.02)
 
-        self.block1 = nn.ModuleList([nn.TransformerEncoderLayer(d_model=starting_layer_dim, nhead=4, dim_feedforward=starting_layer_dim*4) for i in range(2)])
-        self.block2 = nn.ModuleList([nn.TransformerEncoderLayer(d_model=starting_layer_dim//4, nhead=4, dim_feedforward=starting_layer_dim) for i in range(2)])
-        self.block3 = nn.ModuleList([nn.TransformerEncoderLayer(d_model=starting_layer_dim//16, nhead=4, dim_feedforward=starting_layer_dim//4) for i in range(2)])
+        self.block1 = nn.ModuleList(
+            [nn.TransformerEncoderLayer(d_model=starting_layer_dim, nhead=4, dim_feedforward=float * 4)
+             for i in range(encoder_stack_dims[0])])
+        self.block2 = nn.ModuleList(
+            [nn.TransformerEncoderLayer(d_model=starting_layer_dim // 4, nhead=4, dim_feedforward=starting_layer_dim)
+             for i in range(encoder_stack_dims[1])])
+        self.block3 = nn.ModuleList(
+            [nn.TransformerEncoderLayer(d_model=starting_layer_dim // 16, nhead=4, dim_feedforward=starting_layer_dim // 4)
+             for i in range(encoder_stack_dims[2])])
 
         self.deconv = nn.Sequential(
-            nn.Conv2d(self.starting_layer_dim//16, image_shape[0], 3, stride=1, padding=1),
+            nn.Conv2d(self.starting_layer_dim // 16, image_shape[0], 3, stride=1, padding=1),
             nn.Tanh(),
         )
 
         self.image_shape = image_shape
+
+    def __name__(self):
+        return "GeneratorTransformer"
 
     def forward(self, z):
         """
         z - latent representation
         :return:
         """
-        out = self.linear_layer(z).view(-1, self.init_width*self.init_height, self.starting_layer_dim)
+        out = self.linear_layer(z).view(-1, self.init_width * self.init_height, self.starting_layer_dim)
         out = out + self.pos_embed[0].to(out.get_device())
         B = out.size()
         H, W = self.init_width, self.init_height
@@ -177,8 +196,9 @@ class GeneratorTransformer(nn.Module):
         for index, blk in enumerate(self.block3):
             out = blk(out)
 
-        out = self.deconv(out.permute(0, 2, 1).view(-1, self.starting_layer_dim//16, H, W))
+        out = self.deconv(out.permute(0, 2, 1).view(-1, self.starting_layer_dim // 16, H, W))
         return out
+
 
 if __name__ == "__main__":
     a = GeneratorCNN((1, 28, 28), 100)

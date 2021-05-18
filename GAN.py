@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import pytorch_lightning as pl
+from utils import compute_FID
 
 class GAN(pl.LightningModule):
     def __init__(
@@ -9,13 +10,16 @@ class GAN(pl.LightningModule):
             generator_class,
             discriminator_class,
             no_validation_images: int = 10,
-            lr: float = 1E-3,
+            lr_gen: float = 1E-3,
+            lr_dis: float = 1E-3,
             batch_size: int = 32,
             b1: float = 0.5,
             b2: float = 0.999,
+            dataset: str = "MNIST",
+            FID_dim: int = 64
     ):
         super().__init__()
-        self.save_hyperparameters('lr', 'batch_size', 'b1', 'b2')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_dim')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -25,6 +29,8 @@ class GAN(pl.LightningModule):
         # this is used for tracing, I think to ensure that your dimensions are as expected
         # TODO figure out proper dim
         # self.example_input_array = torch.zeros()
+
+        self.dataset = dataset
 
     def forward(self, z):
         return self.generator(z)
@@ -42,7 +48,7 @@ class GAN(pl.LightningModule):
         :return:
         """
 
-        real_imgs, _ = batch # we do not need the actual class
+        real_imgs, _ = batch  # we do not need the actual class
 
         z = torch.randn(real_imgs.shape[0], self.generator.latent_dim).type_as(real_imgs)
         real = torch.ones(real_imgs.size(0), 1).type_as(real_imgs)
@@ -68,7 +74,6 @@ class GAN(pl.LightningModule):
             D_fake = self.discriminator(gen_imgs.detach())
             D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
             # dis_loss = (real_loss + fake_loss) / 2
-
             return D_loss
 
     def configure_optimizers(self):
@@ -95,4 +100,8 @@ class GAN(pl.LightningModule):
         # gen_imgs = self(self.validation_z)
         grid = torchvision.utils.make_grid(gen_imgs)
         # write generated images to tensorboard using the manual logger of pl
-        self.logger.experiment.add_image('generated_images', grid, self.current_epoch)
+        self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
+
+        if self.current_epoch % 5 == 0:
+            FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
+            self.log('FID', FID)

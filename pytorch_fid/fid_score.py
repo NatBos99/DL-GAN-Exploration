@@ -106,20 +106,22 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu', data_l
     """
     model.eval()
 
-    if batch_size > len(files):
-        print(('Warning: batch size is bigger than the data size. '
-               'Setting batch size to data size'))
-        # batch_size = len(files)
+    # if batch_size > len(files):
+    #     print(('Warning: batch size is bigger than the data size. '
+    #            'Setting batch size to data size'))
+    #     # batch_size = len(files)
 
-    dataset = ImagePathDataset(files, transforms=TF.ToTensor())
     if data_loader is None:
+        dataset = ImagePathDataset(files, transforms=TF.ToTensor())
         data_loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=False,
                                              drop_last=False,
                                              num_workers=cpu_count())
-
-    pred_arr = np.empty((len(files), dims))
+        number_of_files = len(files)
+    else:
+        number_of_files = len(data_loader.dataset.dataset)
+    pred_arr = np.empty((number_of_files, dims))
 
     start_idx = 0
 
