@@ -7,8 +7,8 @@ class ConvolutionalBlock(nn.Module):
             self,
             in_channels,
             out_channels,
-            kernel_size,
             up_mode,
+            kernel_size=3,
             norm=None,
             short_cut=False,
             num_skip_in=0,
@@ -50,8 +50,7 @@ class ConvolutionalBlock(nn.Module):
             assert len(self.skip_in_ops) == len(skip_ft)
             for ft, skip_in_op in zip(skip_ft, self.skip_in_ops):
                 h += skip_in_op(F.interpolate(ft, size=(ht, wt), mode=self.up_mode))
-        if self.norm:
-            h = self.n2(h)
+        h = self.n2(h)
         h = nn.ReLU()(h)
         final_out = self.c2(h)
 

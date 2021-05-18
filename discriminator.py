@@ -158,11 +158,11 @@ class DiscriminatorTransformer(nn.Module):
 
 
 class DiscriminatorAutoGAN(nn.Module):
-    def __init__(self, channels, d_spectral_norm=False, activation=nn.ReLU()):
+    def __init__(self, channels, in_channels=3, d_spectral_norm=False, activation=nn.ReLU()):
         super(DiscriminatorAutoGAN, self).__init__()
         self.channels = channels
         self.activation = activation
-        self.block1 = OptimizedDisBlock(d_spectral_norm, 3, self.channels)
+        self.block1 = OptimizedDisBlock(d_spectral_norm, in_channels, self.channels)
         self.block2 = DisBlock(
             d_spectral_norm, self.channels, self.channels, activation=activation, downsample=True
         )

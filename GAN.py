@@ -82,8 +82,8 @@ class GAN(pl.LightningModule):
         #                          betas=(self.hparams.b1, self.hparams.b2))
         # dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr,
         #                          betas=(self.hparams.b1, self.hparams.b2))
-        gen_opt = torch.optim.RMSprop(self.generator.parameters(), lr=self.hparams.lr)
-        dis_opt = torch.optim.RMSprop(self.discriminator.parameters(), lr=self.hparams.lr)
+        gen_opt = torch.optim.RMSprop(self.generator.parameters(), lr=self.hparams.lr_gen)
+        dis_opt = torch.optim.RMSprop(self.discriminator.parameters(), lr=self.hparams.lr_dis)
         return (
             {'optimizer': gen_opt, 'frequency': 1},
             {'optimizer': dis_opt, 'frequency': 5}
@@ -95,13 +95,13 @@ class GAN(pl.LightningModule):
         at the end of the epoch runs this function
         :return:
         """
-        z = self.validation_z.type_as(self.generator.linear_layer.weight)
+        z = self.validation_z
         gen_imgs = self(z)
         # gen_imgs = self(self.validation_z)
         grid = torchvision.utils.make_grid(gen_imgs)
         # write generated images to tensorboard using the manual logger of pl
         self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
 
-        if self.current_epoch % 5 == 0:
-            FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
-            self.log('FID', FID)
+        # if self.current_epoch % 5 == 0:
+        #     FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
+        #     self.log('FID', FID)

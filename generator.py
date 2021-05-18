@@ -203,10 +203,11 @@ class GeneratorTransformer(nn.Module):
 
 
 class GeneratorAutoGAN(nn.Module):
-    def __init__(self, channels, bottom_width, latent_dim):
+    def __init__(self, channels, bottom_width, latent_dim, out_channels=3):
         super(GeneratorAutoGAN, self).__init__()
         self.channels = channels
         self.bottom_width = bottom_width
+        self.latent_dim = latent_dim
         self.l1 = nn.Linear(latent_dim, (self.bottom_width ** 2) * self.channels)
         self.cell1 = ConvolutionalBlock(
             self.channels, self.channels, "nearest", num_skip_in=0, short_cut=True
@@ -220,12 +221,12 @@ class GeneratorAutoGAN(nn.Module):
         self.to_rgb = nn.Sequential(
             nn.BatchNorm2d(self.channels),
             nn.ReLU(),
-            nn.Conv2d(self.channels, 3, 3, 1, 1),
+            nn.Conv2d(self.channels, out_channels, 3, 1, 1),
             nn.Tanh(),
         )
 
     def forward(self, z):
-        h = self.l1(z).view(-1, self.ch, self.bottom_width, self.bottom_width)
+        h = self.l1(z).view(-1, self.channels, self.bottom_width, self.bottom_width)
         h1_skip_out, h1 = self.cell1(h)
         h2_skip_out, h2 = self.cell2(h1, (h1_skip_out,))
         _, h3 = self.cell3(h2, (h1_skip_out, h2_skip_out))

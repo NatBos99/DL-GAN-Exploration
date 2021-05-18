@@ -9,7 +9,7 @@ from array import array
 
 
 import numpy as np
-import cv2
+
 import torch
 from pytorch_fid import fid_score
 from torchvision.utils import save_image
@@ -81,10 +81,15 @@ def get_args(
 def create_images_from_ubyte(src, dest, dataset):
     """
 
-    :param src:
-    :param dest:
-    :return:
-    """
+        :param src:
+        :param dest:
+        :return:
+        """
+    try:
+        import cv2
+    except ImportError:
+        return
+
     with open(src, 'rb') as file:
         magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
         image_data = array("B", file.read())
@@ -96,6 +101,10 @@ def create_images_from_ubyte(src, dest, dataset):
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
 def create_images_from_pickle_py(src, dest, dataset):
+    try:
+        import cv2
+    except ImportError:
+        return
     with open(src, 'rb') as file:
         dict = pickle.load(file, encoding='latin1')
         images = dict['data'].reshape(-1, 3, 32, 32)
