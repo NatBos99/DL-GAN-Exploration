@@ -137,3 +137,5 @@ Datasets/
 
 # Lightning logs
 lightning_logs/
+FID_TESTING/
+Validation-Gen-Images/

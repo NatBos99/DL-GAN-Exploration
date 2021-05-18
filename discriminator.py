@@ -8,7 +8,7 @@ class DiscriminatorCNN(nn.Module):
     """
     D(x | theta)
     """
-    def __init__(self, input_shape, first_hidden_dim=16):
+    def __init__(self, input_shape, first_hidden_dim=64):
         super().__init__()
 
         self.input_shape = input_shape
@@ -30,7 +30,7 @@ class DiscriminatorCNN(nn.Module):
             *discriminator_block(self.input_shape[0], first_hidden_dim, bn=False),
             *discriminator_block(first_hidden_dim, first_hidden_dim * 2),
             *discriminator_block(first_hidden_dim * 2, first_hidden_dim * 4),
-            *discriminator_block(first_hidden_dim * 4, first_hidden_dim * 8),
+            *discriminator_block(first_hidden_dim * 4, first_hidden_dim * 8)
         )
 
         # The height and width of downsampled image
@@ -121,7 +121,7 @@ class DiscriminatorTransformer(nn.Module):
         self.blocks = nn.ModuleList([nn.TransformerEncoderLayer(d_model=self.latent_dim, nhead=4, dim_feedforward=self.latent_dim*4) for i in range(4)])
 
         self.norm = nn.LayerNorm(self.latent_dim)
-        
+
         self.head = nn.Linear(self.latent_dim, 1)
 
         self.apply(self._init_weights)
