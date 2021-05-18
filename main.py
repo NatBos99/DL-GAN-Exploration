@@ -17,7 +17,8 @@ from utils import get_args
 
 def training(args, generator, discriminator, train_loader, valid_loader, checkpoint_callback):
     model = GAN(generator, discriminator, lr_gen=args.lr_gen, lr_dis=args.lr_dis, batch_size=args.batch_size,
-                no_validation_images=args.no_validation_images, dataset=args.dataset)
+                no_validation_images=args.no_validation_images, dataset=args.dataset, FID_step=args.FID_step,
+                FID_dim=args.FID_dim, fid_max_data=args.fid_max_data)
     gpus = 1 if torch.cuda.is_available() else None
     trainer = pl.Trainer(gpus=gpus, max_epochs=args.n_epoch,
                          progress_bar_refresh_rate=20) # callbacks=[checkpoint_callback]
@@ -25,7 +26,8 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args(dataset="CIFAR10", n_epoch=20, no_validation_images=100)
+    args = get_args(dataset="MNIST_128", n_epoch=20, no_validation_images=100, fid_max_data=100,
+                    FID_dim=2048, FID_step=1)
 
     # training
     train, valid, test, img_shape = get_dataset(args)
