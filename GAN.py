@@ -16,7 +16,7 @@ class GAN(pl.LightningModule):
             b1: float = 0.5,
             b2: float = 0.999,
             dataset: str = "MNIST",
-            FID_dim: int = 64
+            FID_dim: int = 2048
     ):
         super().__init__()
         self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_dim')
@@ -57,38 +57,39 @@ class GAN(pl.LightningModule):
         if optimizer_idx == 0:
             gen_imgs = self(z) # this calls the forward pass
             D_fake = self.discriminator(gen_imgs)
-            g_loss = -torch.mean(D_fake)
-            # g_loss = self.adversarial_loss(, real)
+            # g_loss = -torch.mean(D_fake)
+            g_loss = self.adversarial_loss(D_fake, real)
             return g_loss
 
         # train discriminator
         if optimizer_idx == 1:
-            for p in self.discriminator.parameters():
-                p.data.clamp_(-0.01, 0.01)
+            # for p in self.discriminator.parameters():
+            #     p.data.clamp_(-0.1, 0.1)
             fake = torch.zeros(real_imgs.size(0), 1).type_as(real_imgs)
 
             gen_imgs = self(z) # this calls the forward pass
-            # real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
-            # fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
-            D_real = self.discriminator(real_imgs)
-            D_fake = self.discriminator(gen_imgs.detach())
-            D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
-            # dis_loss = (real_loss + fake_loss) / 2
-            return D_loss
+            real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
+            fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
+            # D_real = self.discriminator(real_imgs)
+            # D_fake = self.discriminator(gen_imgs.detach())
+            # D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
+            dis_loss = (real_loss + fake_loss) / 2
+            # return D_loss
+            return dis_loss
 
     def configure_optimizers(self):
         # https://pytorch-lightning.readthedocs.io/en/latest/common/optimizers.html#use-multiple-optimizers-like-gans
-        # gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr,
-        #                          betas=(self.hparams.b1, self.hparams.b2))
-        # dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr,
-        #                          betas=(self.hparams.b1, self.hparams.b2))
-        gen_opt = torch.optim.RMSprop(self.generator.parameters(), lr=self.hparams.lr)
-        dis_opt = torch.optim.RMSprop(self.discriminator.parameters(), lr=self.hparams.lr)
-        return (
-            {'optimizer': gen_opt, 'frequency': 1},
-            {'optimizer': dis_opt, 'frequency': 5}
-        )
-        # return gen_opt, dis_opt
+        gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen,
+                                 betas=(self.hparams.b1, self.hparams.b2))
+        dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis,
+                                 betas=(self.hparams.b1, self.hparams.b2))
+        # gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen)
+        # dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis)
+        # return (
+        #     {'optimizer': gen_opt, 'frequency': 1},
+        #     {'optimizer': dis_opt, 'frequency': 5}
+        # )
+        return gen_opt, dis_opt
 
     def on_epoch_end(self):
         """
@@ -102,6 +103,6 @@ class GAN(pl.LightningModule):
         # write generated images to tensorboard using the manual logger of pl
         self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
 
-        if self.current_epoch % 5 == 0:
-            FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
-            self.log('FID', FID)
+        FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
+        self.log('FID', FID)
+        print('FID', FID)

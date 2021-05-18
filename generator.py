@@ -154,7 +154,7 @@ class GeneratorTransformer(nn.Module):
             trunc_normal_(self.pos_embed[i], std=.02)
 
         self.block1 = nn.ModuleList(
-            [nn.TransformerEncoderLayer(d_model=starting_layer_dim, nhead=4, dim_feedforward=float * 4)
+            [nn.TransformerEncoderLayer(d_model=starting_layer_dim, nhead=4, dim_feedforward=starting_layer_dim * 4)
              for i in range(encoder_stack_dims[0])])
         self.block2 = nn.ModuleList(
             [nn.TransformerEncoderLayer(d_model=starting_layer_dim // 4, nhead=4, dim_feedforward=starting_layer_dim)
