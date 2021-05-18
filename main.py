@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 
 from GAN import GAN
 from generator import GeneratorCNN, GeneratorTransformer
-from discriminator import DiscriminatorCNN
+from discriminator import DiscriminatorCNN, DiscriminatorTransformer
 from datatsets import get_dataset
 from utils import get_args
 
@@ -30,6 +30,7 @@ if __name__ == "__main__":
     train, valid, test, img_shape = get_dataset(args)
 
     gen = GeneratorTransformer(img_shape, args.latent_dim)
+    # dis = DiscriminatorTransformer(img_shape)
     dis = DiscriminatorCNN(img_shape)
 
     # checkpoint_callback = pl.ModelCheckpoint(

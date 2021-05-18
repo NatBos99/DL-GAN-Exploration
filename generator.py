@@ -123,7 +123,7 @@ class GeneratorTransformer(nn.Module):
     def __init__(self,
                  image_shape, #channels x width x height
                  latent_dim,
-                 starting_layer_dim: int = 128
+                 starting_layer_dim: int = 64
                  ):
         super().__init__()
         self.latent_dim = latent_dim
