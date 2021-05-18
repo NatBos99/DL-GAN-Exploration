@@ -5,6 +5,8 @@ import torch.nn as nn
 import math
 import warnings
 
+from model_blocks import *
+
 
 class GeneratorCNN(nn.Module):
     """
@@ -198,6 +200,38 @@ class GeneratorTransformer(nn.Module):
 
         out = self.deconv(out.permute(0, 2, 1).view(-1, self.starting_layer_dim // 16, H, W))
         return out
+
+
+class GeneratorAutoGAN(nn.Module):
+    def __init__(self, channels, bottom_width, latent_dim):
+        super(GeneratorAutoGAN, self).__init__()
+        self.channels = channels
+        self.bottom_width = bottom_width
+        self.l1 = nn.Linear(latent_dim, (self.bottom_width ** 2) * self.channels)
+        self.cell1 = ConvolutionalBlock(
+            self.channels, self.channels, "nearest", num_skip_in=0, short_cut=True
+        )
+        self.cell2 = ConvolutionalBlock(
+            self.channels, self.channels, "bilinear", num_skip_in=1, short_cut=True
+        )
+        self.cell3 = ConvolutionalBlock(
+            self.channels, self.channels, "nearest", num_skip_in=2, short_cut=False
+        )
+        self.to_rgb = nn.Sequential(
+            nn.BatchNorm2d(self.channels),
+            nn.ReLU(),
+            nn.Conv2d(self.channels, 3, 3, 1, 1),
+            nn.Tanh(),
+        )
+
+    def forward(self, z):
+        h = self.l1(z).view(-1, self.ch, self.bottom_width, self.bottom_width)
+        h1_skip_out, h1 = self.cell1(h)
+        h2_skip_out, h2 = self.cell2(h1, (h1_skip_out,))
+        _, h3 = self.cell3(h2, (h1_skip_out, h2_skip_out))
+        output = self.to_rgb(h3)
+
+        return output
 
 
 if __name__ == "__main__":
