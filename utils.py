@@ -72,6 +72,11 @@ def get_args(
     parser.add_argument('--no_validation_images', type=int, default=no_validation_images,
                         help="Number of validation images to create")
 
+    parser.add_argument('--FID_step', type=int, default=10,
+                        help="How often the FID compute should be called, every X steps")
+
+    parser.add_argument('--FID_dim', type=int, default=64,
+                        help="The number of dimensions of InceptionV3 to be used when computing FID, the options are the following: 64. 192, 768, 2048")
 
     args = parser.parse_args()
 

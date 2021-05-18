@@ -16,10 +16,11 @@ class GAN(pl.LightningModule):
             b1: float = 0.5,
             b2: float = 0.999,
             dataset: str = "MNIST",
+            FID_step: int = 10,
             FID_dim: int = 64
     ):
         super().__init__()
-        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_dim')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_step', 'FID_dim')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -91,6 +92,6 @@ class GAN(pl.LightningModule):
         # write generated images to tensorboard using the manual logger of pl
         self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
 
-        if self.current_epoch % 5 == 0:
+        if self.current_epoch % self.hparams.FID_step == 0:
             FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
             self.log('FID', FID)
