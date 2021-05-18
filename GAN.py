@@ -55,29 +55,40 @@ class GAN(pl.LightningModule):
 
         # train generator
         if optimizer_idx == 0:
-            gen_imgs = self(z)  # this calls the forward pass
-            g_loss = self.adversarial_loss(self.discriminator(gen_imgs), real)
+            gen_imgs = self(z) # this calls the forward pass
+            D_fake = self.discriminator(gen_imgs)
+            g_loss = -torch.mean(D_fake)
+            # g_loss = self.adversarial_loss(, real)
             return g_loss
 
         # train discriminator
         if optimizer_idx == 1:
+            for p in self.discriminator.parameters():
+                p.data.clamp_(-0.01, 0.01)
             fake = torch.zeros(real_imgs.size(0), 1).type_as(real_imgs)
 
-            gen_imgs = self(z)  # this calls the forward pass
-            real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
-            fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
-
-            dis_loss = (real_loss + fake_loss) / 2
-
-            return dis_loss
+            gen_imgs = self(z) # this calls the forward pass
+            # real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
+            # fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
+            D_real = self.discriminator(real_imgs)
+            D_fake = self.discriminator(gen_imgs.detach())
+            D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
+            # dis_loss = (real_loss + fake_loss) / 2
+            return D_loss
 
     def configure_optimizers(self):
         # https://pytorch-lightning.readthedocs.io/en/latest/common/optimizers.html#use-multiple-optimizers-like-gans
-        gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen,
-                                   betas=(self.hparams.b1, self.hparams.b2))
-        dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis,
-                                   betas=(self.hparams.b1, self.hparams.b2))
-        return gen_opt, dis_opt
+        # gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr,
+        #                          betas=(self.hparams.b1, self.hparams.b2))
+        # dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr,
+        #                          betas=(self.hparams.b1, self.hparams.b2))
+        gen_opt = torch.optim.RMSprop(self.generator.parameters(), lr=self.hparams.lr)
+        dis_opt = torch.optim.RMSprop(self.discriminator.parameters(), lr=self.hparams.lr)
+        return (
+            {'optimizer': gen_opt, 'frequency': 1},
+            {'optimizer': dis_opt, 'frequency': 5}
+        )
+        # return gen_opt, dis_opt
 
     def on_epoch_end(self):
         """
