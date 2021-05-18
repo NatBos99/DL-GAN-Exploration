@@ -35,7 +35,10 @@ def get_args(
             image_size: int = 32,
             train_valid_split: float = 0.9,
             fid_max_data: int = 10000,
-            no_validation_images: int = 16
+            no_validation_images: int = 16,
+            FID_dim: int = 64,
+            FID_step: int = 10,
+            data_augmentation: int = False
             ):
     # cli arguments
     parser = argparse.ArgumentParser(
@@ -72,18 +75,23 @@ def get_args(
     parser.add_argument('--no_validation_images', type=int, default=no_validation_images,
                         help="Number of validation images to create")
 
-    parser.add_argument('--FID_step', type=int, default=10,
+    parser.add_argument('--FID_step', type=int, default=FID_step,
                         help="How often the FID compute should be called, every X steps")
 
-    parser.add_argument('--FID_dim', type=int, default=64,
+    parser.add_argument('--FID_dim', type=int, default=FID_dim,
                         help="The number of dimensions of InceptionV3 to be used when computing FID, the options are the following: 64. 192, 768, 2048")
+    parser.add_argument('--fid_max_data', type=int, default=fid_max_data,
+                        help="Number of images for FID")
+
+    parser.add_argument('--data_augmentation', type=bool, default=data_augmentation,
+                        help="If the data should be augmentation")
 
     args = parser.parse_args()
 
     return args
 
 
-def create_images_from_ubyte(src, dest, dataset):
+def create_images_from_ubyte(src, dest, dataset, fid_max_data=None):
     """
 
     :param src:
@@ -96,16 +104,21 @@ def create_images_from_ubyte(src, dest, dataset):
 
     images = np.zeros((size, rows, cols))
 
+    if fid_max_data is not None:
+        size = fid_max_data
+    print(f"size {size}")
     for i in range(size):
         images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
-def create_images_from_pickle_py(src, dest, dataset):
+def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
     with open(src, 'rb') as file:
         dict = pickle.load(file, encoding='latin1')
         images = dict['data'].reshape(-1, 3, 32, 32)
 
-    for i in range(images.shape[0]):
+
+    size = fid_max_data if fid_max_data is not None else images.shape[0]
+    for i in range(size):
         # reshape for cv write so that the channel is the last dim
         img = images[i].transpose(1, 2, 0)
 
@@ -133,7 +146,7 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     return dir_name
 
 
-def compute_FID(imgs, dataset, batch_size, device, dims):
+def compute_FID(imgs, dataset, batch_size, device, dims, fid_max_data=None):
     """
     TODO: this function only currently can work with the MNIST datasets
     :param imgs:
@@ -152,16 +165,16 @@ def compute_FID(imgs, dataset, batch_size, device, dims):
         os.makedirs(dataset_dest)
 
         if dataset in UBYTE_DATASETS:
-            create_images_from_ubyte(dataset_src, dataset_dest, dataset)
+            create_images_from_ubyte(dataset_src, dataset_dest, dataset, fid_max_data)
         elif dataset == "CIFAR10":
-            create_images_from_pickle_py(dataset_src, dataset_dest, dataset)
+            create_images_from_pickle_py(dataset_src, dataset_dest, dataset, fid_max_data)
         else:
             raise NotImplementedError('Unknown dataset')
 
 
     paths = [fake_path, dataset_dest]
     fid = fid_score.calculate_fid_given_paths(paths, batch_size, device, dims)
-
+    print(f"fid:{fid}")
     return fid
 if __name__ == "__main__":
     dataset = "CIFAR10"
