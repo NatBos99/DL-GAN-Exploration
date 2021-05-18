@@ -134,6 +134,8 @@ class DiscriminatorTransformer(nn.Module):
         elif isinstance(m, nn.LayerNorm):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
+    def __name__(self):
+        return "DiscriminatorTransformer"
 
     def forward(self, img):
         img = self.patch_embed(img)

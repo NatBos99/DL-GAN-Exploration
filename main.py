@@ -38,7 +38,7 @@ if __name__ == "__main__":
     checkpoint_callback = ModelCheckpoint(
                         monitor='FID',
                         dirpath='Checkpoints',
-                        filename=f'{gen.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
+                        filename=f'{gen.__name__}{dis.__name__}-{args.dataset}'+'{epoch:02d}-{FID:.2f}',
                         save_top_k=5,
                         mode='min',
                     )
