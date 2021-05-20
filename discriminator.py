@@ -36,9 +36,7 @@ class DiscriminatorCNN(nn.Module):
         # The height and width of downsampled image
         ds_size = self.input_shape[1] // 2 ** 4
         self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 1), nn.Sigmoid())
-
-    def __name__(self):
-        return "DiscriminatorCNN"
+        self.name = "DiscriminatorCNN"
 
     def forward(self, img):
         out = self.model(img)
@@ -125,7 +123,7 @@ class DiscriminatorTransformer(nn.Module):
         self.head = nn.Linear(self.latent_dim, 1)
 
         self.apply(self._init_weights)
-
+        self.name = "DiscriminatorTransformer"
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=.02)
@@ -134,8 +132,6 @@ class DiscriminatorTransformer(nn.Module):
         elif isinstance(m, nn.LayerNorm):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
-    def __name__(self):
-        return "DiscriminatorTransformer"
 
     def forward(self, img):
         img = self.patch_embed(img)

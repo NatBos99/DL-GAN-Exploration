@@ -39,10 +39,7 @@ class GeneratorCNN(nn.Module):
         )
 
         self.image_shape = image_shape
-
-    def __name__(self):
-        return "GeneratorCNN"
-
+        self.name = "GeneratorCNN"
 
     def forward(self, z):
         """
@@ -169,9 +166,7 @@ class GeneratorTransformer(nn.Module):
         )
 
         self.image_shape = image_shape
-
-    def __name__(self):
-        return "GeneratorTransformer"
+        self.name = "GeneratorTransformer"
 
     def forward(self, z):
         """
