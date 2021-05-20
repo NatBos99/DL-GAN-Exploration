@@ -105,7 +105,7 @@ class GAN(pl.LightningModule):
         # write generated images to tensorboard using the manual logger of pl
         self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
 
-        if self.current_epoch % self.hparams.FID_step == 0:
+        if (self.current_epoch + 1) % self.hparams.FID_step == 0:
             FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size,
                               self.device, self.hparams.FID_dim, self.hparams.fid_max_data)
             self.log('FID', FID)
