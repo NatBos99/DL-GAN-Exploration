@@ -169,6 +169,7 @@ class GeneratorTransformer(nn.Module):
 
         self.image_shape = image_shape
         self.name = "GeneratorTransformer"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, z):
         """
@@ -176,7 +177,7 @@ class GeneratorTransformer(nn.Module):
         :return:
         """
         out = self.linear_layer(z).view(-1, self.init_width * self.init_height, self.starting_layer_dim)
-        out = out + self.pos_embed[0].to(out.get_device())
+        out = out + self.pos_embed[0].to(self.device)
         B = out.size()
         H, W = self.init_width, self.init_height
 
@@ -184,12 +185,12 @@ class GeneratorTransformer(nn.Module):
             out = blk(out)
 
         out, H, W = pixel_upsample(out, H, W)
-        out = out + self.pos_embed[1].to(out.get_device())
+        out = out + self.pos_embed[1].to(self.device)
         for index, blk in enumerate(self.block2):
             out = blk(out)
 
         out, H, W = pixel_upsample(out, H, W)
-        out = out + self.pos_embed[2].to(out.get_device())
+        out = out + self.pos_embed[2].to(self.device)
         for index, blk in enumerate(self.block3):
             out = blk(out)
 
@@ -219,6 +220,7 @@ class GeneratorAutoGAN(nn.Module):
             nn.Conv2d(self.channels, out_channels, 3, 1, 1),
             nn.Tanh(),
         )
+        self.name = "GeneratorAutoGAN"
 
     def forward(self, z):
         h = self.l1(z).view(-1, self.channels, self.bottom_width, self.bottom_width)

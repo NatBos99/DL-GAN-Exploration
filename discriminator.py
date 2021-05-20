@@ -173,6 +173,7 @@ class DiscriminatorAutoGAN(nn.Module):
         self.l5 = nn.Linear(self.channels, 1, bias=False)
         if d_spectral_norm:
             self.l5 = nn.utils.spectral_norm(self.l5)
+        self.name = "DiscriminatorAutoGAN"
 
     def forward(self, x):
         h = x
