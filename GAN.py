@@ -98,7 +98,7 @@ class GAN(pl.LightningModule):
         at the end of the epoch runs this function
         :return:
         """
-        z = self.validation_z
+        z = self.validation_z.to('cuda' if torch.cuda.is_available() else 'cpu')
         gen_imgs = self(z)
         # gen_imgs = self(self.validation_z)
         grid = torchvision.utils.make_grid(gen_imgs)
