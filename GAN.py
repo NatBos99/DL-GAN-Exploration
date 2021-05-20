@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import pytorch_lightning as pl
-from utils import compute_FID
+from utils import compute_FID, compute_IS
 
 class GAN(pl.LightningModule):
     def __init__(
@@ -108,4 +108,6 @@ class GAN(pl.LightningModule):
         if (self.current_epoch + 1) % self.hparams.FID_step == 0:
             FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size,
                               self.device, self.hparams.FID_dim, self.hparams.fid_max_data)
+            IS = compute_IS(gen_imgs, already_created=True)
             self.log('FID', FID)
+            self.log('IS', IS)

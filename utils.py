@@ -13,7 +13,12 @@ import numpy as np
 import torch
 from pytorch_fid import fid_score
 from torchvision.utils import save_image
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
+
 from datatsets import get_dataset
+from inception_score_pytorch import inception_score
+
 
 MY_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -116,6 +121,8 @@ def create_images_from_ubyte(src, dest, dataset, fid_max_data=None):
         images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
+        return images
+
 def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
     try:
         import cv2
@@ -135,8 +142,10 @@ def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', img)
 
+    return images
 
-def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
+
+def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images", already_created=False):
     """
 
     :param Tensors: img_tensor to be saved
@@ -149,8 +158,9 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images"):
     os.makedirs(dir_name, exist_ok=True)
 
     # unpack sensor?
-    for img in Tensors:
-        save_image(img, f'{dir_name}/gen-img{time.time():.20f}.png')
+    if not already_created:
+        for img in Tensors:
+            save_image(img, f'{dir_name}/gen-img{time.time():.20f}.png')
 
     return dir_name
 
@@ -183,17 +193,67 @@ def compute_FID(imgs, dataset, batch_size, device, dims, fid_max_data=None):
 
     paths = [fake_path, dataset_dest]
     fid = fid_score.calculate_fid_given_paths(paths, batch_size, device, dims)
-    print(f"fid:{fid}")
+    # print(f"fid:{fid}")
     return fid
+
+
+
+
+def compute_IS(imgs, already_created=False):
+    """
+    only use with cifar 10
+    :param imgs:
+    :return:
+    """
+    class IgnoreLabelDataset(torch.utils.data.Dataset):
+        def __init__(self, orig):
+            self.orig = orig
+
+        def __getitem__(self, index):
+            return self.orig[index][0]
+
+        def __len__(self):
+            return len(self.orig)
+
+
+
+    fake_path = create_dir_from_tensors(imgs, already_created=already_created)
+
+    dest = os.path.join(fake_path, "lol")
+
+    shutil.copytree(fake_path, dest)
+
+    cifar = dset.ImageFolder(root=fake_path,
+                             transform=transforms.Compose([
+                                 transforms.Scale(32),
+                                 transforms.ToTensor(),
+                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                             ])
+    )
+
+    cifar = IgnoreLabelDataset(cifar)
+    IS = inception_score(cifar, resize=True)
+
+    return IS
+
 if __name__ == "__main__":
+    # dataset = "CIFAR10"
+    # args = get_args(batch_size=32, dataset=dataset)
+    # train_loader, valid_loader, test_loader, img_shape = get_dataset(args)
+    #
+    # imgs = torch.randn(16, 1, 32, 32).type(torch.float32)
+    #
+    # fid = compute_FID(imgs, args, 'cuda', 64)
+    # print(fid)
     dataset = "CIFAR10"
     args = get_args(batch_size=32, dataset=dataset)
     train_loader, valid_loader, test_loader, img_shape = get_dataset(args)
 
-    imgs = torch.randn(16, 1, 32, 32).type(torch.float32)
+    imgs = torch.randn(128, 3, 32, 32).type(torch.float32)
 
-    fid = compute_FID(imgs, args, 'cuda', 64)
-    print(fid)
+    compute_IS(imgs)
+    # fid = compute_FID(imgs, args, 'cuda', 64)
+    # print(fid)
     # args = get_args(dataset="CIFAR10", n_epoch=20, no_validation_images=100)
     #
     # # training
