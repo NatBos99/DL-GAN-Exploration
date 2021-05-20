@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
+import warnings
+
+from model_blocks import *
 
 
 class DiscriminatorCNN(nn.Module):
@@ -150,3 +153,36 @@ class DiscriminatorTransformer(nn.Module):
 
         validity = self.head(img)
         return validity
+
+
+class DiscriminatorAutoGAN(nn.Module):
+    def __init__(self, channels, in_channels=3, d_spectral_norm=False, activation=nn.ReLU()):
+        super(DiscriminatorAutoGAN, self).__init__()
+        self.channels = channels
+        self.activation = activation
+        self.block1 = OptimizedDisBlock(d_spectral_norm, in_channels, self.channels)
+        self.block2 = DisBlock(
+            d_spectral_norm, self.channels, self.channels, activation=activation, downsample=True
+        )
+        self.block3 = DisBlock(
+            d_spectral_norm, self.channels, self.channels, activation=activation, downsample=False
+        )
+        self.block4 = DisBlock(
+            d_spectral_norm, self.channels, self.channels, activation=activation, downsample=False
+        )
+        self.l5 = nn.Linear(self.channels, 1, bias=False)
+        if d_spectral_norm:
+            self.l5 = nn.utils.spectral_norm(self.l5)
+
+    def forward(self, x):
+        h = x
+        layers = [self.block1, self.block2, self.block3]
+        model = nn.Sequential(*layers)
+        h = model(h)
+        h = self.block4(h)
+        h = self.activation(h)
+        # Global average pooling
+        h = h.sum(2).sum(2)
+        output = self.l5(h)
+
+        return output
