@@ -25,7 +25,7 @@ MY_PATH = os.path.abspath(os.path.dirname(__file__))
 DATASET_DIR = {"MNIST": os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
                "FashionMNIST": os.path.join(MY_PATH, "Datasets/FashionMNIST/FashionMNIST/raw/t10k-images-idx3-ubyte"),
                 "MNIST_128":  os.path.join(MY_PATH, "Datasets/MNIST/MNIST/raw/t10k-images-idx3-ubyte"),
-                "CIFAR10":  os.path.join(MY_PATH, "Datasets/cifar-10-batches-py/data_batch_1")
+                "CIFAR10":  os.path.join(MY_PATH, "Datasets/cifar-10-batches-py/test_batch")
                 }
 UBYTE_DATASETS = ["MNIST", "FashionMNIST", "MNIST_128"]
 
