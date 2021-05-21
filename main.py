@@ -1,4 +1,7 @@
 import argparse
+import os.path
+from shutil import rmtree
+
 
 import torch
 import torchvision
@@ -26,9 +29,13 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args(dataset="CIFAR10", n_epoch=300, no_validation_images=10000, fid_max_data=10000,
-                    FID_dim=2048, FID_step=2, latent_dim=128)
+    args = get_args(dataset="MNIST_128", n_epoch=10, no_validation_images=100, fid_max_data=100,
+                    FID_dim=2048, FID_step=1, latent_dim=128, train_valid_split=0.01)
 
+    #  delete the previously created images
+    dest = 'Validation-Gen-Images'
+    if os.path.exists(dest):
+        rmtree(dest)
     # training
     train, valid, test, img_shape = get_dataset(args)
 

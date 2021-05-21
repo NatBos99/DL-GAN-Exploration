@@ -107,7 +107,7 @@ def create_images_from_ubyte(src, dest, dataset, fid_max_data=None):
         import cv2
     except ImportError:
         return
-
+    print("hi")
     with open(src, 'rb') as file:
         magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
         image_data = array("B", file.read())
@@ -116,12 +116,11 @@ def create_images_from_ubyte(src, dest, dataset, fid_max_data=None):
 
     if fid_max_data is not None:
         size = fid_max_data
-    print(f"size {size}")
     for i in range(size):
         images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
-        cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
+        cv2.imwrite(f'{dest}/{dataset}-{i:03}.jpg', images[i, :])
 
-        return images
+    return images
 
 def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
     try:
@@ -140,12 +139,12 @@ def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
 
         # array is RGB. cv2 needs BGR
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', img)
+        cv2.imwrite(f'{dest}/{dataset}-{i:03}.jpg', img)
 
     return images
 
 
-def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images", already_created=False):
+def create_dir_from_tensors(Tensors, offset, dir_name="Validation-Gen-Images", already_created=False):
     """
 
     :param Tensors: img_tensor to be saved
@@ -153,19 +152,19 @@ def create_dir_from_tensors(Tensors, dir_name="Validation-Gen-Images", already_c
     :return: path to directory
     """
     # Create Dir if it does not exist
-    if os.path.exists(dir_name):
-        shutil.rmtree(dir_name)
+    # if os.path.exists(dir_name):
+    #     shutil.rmtree(dir_name)
     os.makedirs(dir_name, exist_ok=True)
 
     # unpack sensor?
     if not already_created:
-        for img in Tensors:
-            save_image(img, f'{dir_name}/gen-img{time.time():.20f}.png')
+        for i, img in enumerate(Tensors):
+            save_image(img, f'{dir_name}/gen-img-{i+offset:05}.png')
 
     return dir_name
 
 
-def compute_FID(imgs, dataset, batch_size, device, dims, fid_max_data=None):
+def compute_FID(fake_path, dataset, batch_size, device, dims, fid_max_data=None):
     """
     TODO: this function only currently can work with the MNIST datasets
     :param imgs:
@@ -175,10 +174,9 @@ def compute_FID(imgs, dataset, batch_size, device, dims, fid_max_data=None):
     :param dims:
     :return:
     """
-    fake_path = create_dir_from_tensors(imgs)
 
     dataset_src = DATASET_DIR[dataset]
-    dataset_dest = os.path.join(MY_PATH, f"FID_TESTING/{dataset}")
+    dataset_dest = os.path.join(MY_PATH, f"FID_TESTING/{dataset}-{fid_max_data if fid_max_data is not None else 10000}")
 
     if not os.path.exists(dataset_dest):
         os.makedirs(dataset_dest)
@@ -199,7 +197,7 @@ def compute_FID(imgs, dataset, batch_size, device, dims, fid_max_data=None):
 
 
 
-def compute_IS(imgs, already_created=False):
+def compute_IS(fake_path, already_created=False):
     """
     only use with cifar 10
     :param imgs:
@@ -217,10 +215,10 @@ def compute_IS(imgs, already_created=False):
 
 
 
-    fake_path = create_dir_from_tensors(imgs, already_created=already_created)
-
+    # this is some silliness to be able to use the ImageFolder since it requries the images to be in the subdirs
     dest = os.path.join(fake_path, "lol")
-
+    if os.path.exists(dest):
+      shutil.rmtree(dest)
     shutil.copytree(fake_path, dest)
 
     cifar = dset.ImageFolder(root=fake_path,
