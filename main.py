@@ -13,6 +13,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from GAN import GAN
 from generator import GeneratorCNN, GeneratorTransformer, GeneratorAutoGAN
+from generator_trans import Generator
 from discriminator import DiscriminatorCNN, DiscriminatorTransformer, DiscriminatorAutoGAN
 from datatsets import get_dataset
 from utils import get_args
@@ -29,7 +30,7 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args(dataset="MNIST_128", n_epoch=10, no_validation_images=100, fid_max_data=100,
+    args = get_args(dataset="CIFAR10", n_epoch=10, no_validation_images=100, fid_max_data=100,
                     FID_dim=2048, FID_step=1, latent_dim=128, train_valid_split=0.01)
 
     #  delete the previously created images
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     # gen = GeneratorAutoGAN(channels=64, bottom_width=4, latent_dim=128, out_channels=3)
     # dis = DiscriminatorAutoGAN(channels=64, in_channels=3)
 
-    gen = GeneratorTransformer(img_shape, args.latent_dim)
+    gen = Generator(img_shape, args.latent_dim)  # only works for 3 layers...
     # gen = GeneratorCNN(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape, args.dis_hidden)
     # dis = DiscriminatorTransformer(img_shape)

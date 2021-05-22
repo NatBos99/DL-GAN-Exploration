@@ -35,7 +35,7 @@ class GAN(pl.LightningModule):
         self.dataset = dataset
 
     def forward(self, z):
-        return self.generator(z)
+        return self.generator(z, epoch=self.current_epoch)
 
     def adversarial_loss(self, y_hat, y):
         return F.binary_cross_entropy(y_hat, y)
