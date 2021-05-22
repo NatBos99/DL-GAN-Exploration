@@ -39,8 +39,7 @@ class DiscriminatorCNN(nn.Module):
         ds_size = self.input_shape[1] // 2 ** 4
 
         self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 256),
-                                       nn.Linear(256, 1),
-                                       nn.Sigmoid())
+                                       nn.Linear(256, 1))
         self.name = "DiscriminatorCNN"
 
     def forward(self, img):

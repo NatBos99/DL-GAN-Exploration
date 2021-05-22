@@ -92,8 +92,8 @@ class GAN(pl.LightningModule):
             gen_imgs = self(z) # this calls the forward pass
             D_fake = self.discriminator(gen_imgs)
             # g_loss = -torch.mean(D_fake)
-            g_loss = self.adversarial_loss(D_fake, real)
-            # g_loss = -torch.mean(D_fake)
+            # g_loss = self.adversarial_loss(D_fake, real)
+            g_loss = -torch.mean(D_fake)
             return g_loss
 
         # train discriminator
