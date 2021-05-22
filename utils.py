@@ -92,7 +92,7 @@ def create_images_from_ubyte(src, dest, dataset):
     images = np.zeros((size, rows, cols))
 
     # for i in range(size):
-    for i in range(1000):
+    for i in range(100):
         images[i, :, :] = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]).reshape(rows, cols)
         cv2.imwrite(f'{dest}/{dataset}-{i}.jpg', images[i, :])
 
@@ -102,7 +102,7 @@ def create_images_from_pickle_py(src, dest, dataset):
         images = dict['data'].reshape(-1, 3, 32, 32)
 
     # for i in range(images.shape[0]):
-    for i in range(1000):
+    for i in range(100):
         # reshape for cv write so that the channel is the last dim
         img = images[i].transpose(1, 2, 0)
 

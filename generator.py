@@ -24,17 +24,31 @@ class GeneratorCNN(nn.Module):
 
         self.linear_layer = nn.Linear(latent_dim, starting_layer_dim * self.init_width * self.init_height)
 
+        # self.conv_blocks = nn.Sequential(
+        #     nn.BatchNorm2d(128),
+        #     nn.Upsample(scale_factor=2),
+        #     nn.Conv2d(128, 128, 3, stride=1, padding=1),
+        #     nn.BatchNorm2d(128, 0.8),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     nn.Upsample(scale_factor=2),
+        #     nn.Conv2d(128, 64, 3, stride=1, padding=1),
+        #     nn.BatchNorm2d(64, 0.8),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     nn.Conv2d(64, image_shape[0], 3, stride=1, padding=1),
+        #     nn.Tanh(),
+        # )
+
         self.conv_blocks = nn.Sequential(
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(starting_layer_dim),
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 128, 3, stride=1, padding=1),
-            nn.BatchNorm2d(128, 0.8),
+            nn.Conv2d(starting_layer_dim, starting_layer_dim//2, 3, stride=1, padding=1),
+            nn.BatchNorm2d(starting_layer_dim//2, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64, 0.8),
+            nn.Conv2d(starting_layer_dim//2, starting_layer_dim//4, 3, stride=1, padding=1),
+            nn.BatchNorm2d(starting_layer_dim//4, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(64, image_shape[0], 3, stride=1, padding=1),
+            nn.Conv2d(starting_layer_dim//4, image_shape[0], 3, stride=1, padding=1),
             nn.Tanh(),
         )
 
@@ -132,12 +146,12 @@ class GeneratorTransformer(nn.Module):
     def __init__(self,
                  image_shape,  # channels x width x height
                  latent_dim,
-                 starting_layer_dim: int = 128,
+                 starting_layer_dim: int = 64,
                  encoder_stack_dims: List[int] = None
                  ):
         super().__init__()
         if encoder_stack_dims is None:
-            encoder_stack_dims = [5, 2, 2]
+            encoder_stack_dims = [1, 1, 1]
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
         self.init_width = image_shape[1] // 4

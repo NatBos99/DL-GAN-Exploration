@@ -139,3 +139,4 @@ Datasets/
 lightning_logs/
 FID_TESTING/
 Validation-Gen-Images/
+pytorch_fid/

@@ -11,10 +11,10 @@ class GAN(pl.LightningModule):
             discriminator_class,
             no_validation_images: int = 10,
             lr_gen: float = 1E-3,
-            lr_dis: float = 1E-3,
+            lr_dis: float = 1E-2,
             batch_size: int = 32,
-            b1: float = 0.5,
-            b2: float = 0.999,
+            b1: float = 0.0,
+            b2: float = 0.9,
             dataset: str = "MNIST",
             FID_dim: int = 2048
     ):
@@ -69,7 +69,7 @@ class GAN(pl.LightningModule):
 
             gen_imgs = self(z) # this calls the forward pass
             real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
-            fake_loss = self.adversarial_loss(self.discriminator(gen_imgs.detach()), fake)
+            fake_loss = self.adversarial_loss(self.discriminator(gen_imgs), fake)
             # D_real = self.discriminator(real_imgs)
             # D_fake = self.discriminator(gen_imgs.detach())
             # D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
