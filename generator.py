@@ -5,6 +5,8 @@ import torch.nn as nn
 import math
 import warnings
 
+from model_blocks import *
+
 
 class GeneratorCNN(nn.Module):
     """
@@ -53,10 +55,7 @@ class GeneratorCNN(nn.Module):
         )
 
         self.image_shape = image_shape
-
-    def __name__(self):
-        return "GeneratorCNN"
-
+        self.name = "GeneratorCNN"
 
     def forward(self, z):
         """
@@ -183,9 +182,8 @@ class GeneratorTransformer(nn.Module):
         )
 
         self.image_shape = image_shape
-
-    def __name__(self):
-        return "GeneratorTransformer"
+        self.name = "GeneratorTransformer"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, z):
         """
@@ -193,7 +191,7 @@ class GeneratorTransformer(nn.Module):
         :return:
         """
         out = self.linear_layer(z).view(-1, self.init_width * self.init_height, self.starting_layer_dim)
-        out = out + self.pos_embed[0].to(out.get_device())
+        out = out + self.pos_embed[0].to(self.device)
         B = out.size()
         H, W = self.init_width, self.init_height
 
@@ -201,17 +199,51 @@ class GeneratorTransformer(nn.Module):
             out = blk(out)
 
         out, H, W = pixel_upsample(out, H, W)
-        out = out + self.pos_embed[1].to(out.get_device())
+        out = out + self.pos_embed[1].to(self.device)
         for index, blk in enumerate(self.block2):
             out = blk(out)
 
         out, H, W = pixel_upsample(out, H, W)
-        out = out + self.pos_embed[2].to(out.get_device())
+        out = out + self.pos_embed[2].to(self.device)
         for index, blk in enumerate(self.block3):
             out = blk(out)
 
         out = self.deconv(out.permute(0, 2, 1).view(-1, self.starting_layer_dim // 16, H, W))
         return out
+
+
+class GeneratorAutoGAN(nn.Module):
+    def __init__(self, channels, bottom_width, latent_dim, out_channels=3):
+        super(GeneratorAutoGAN, self).__init__()
+        self.channels = channels
+        self.bottom_width = bottom_width
+        self.latent_dim = latent_dim
+        self.l1 = nn.Linear(latent_dim, (self.bottom_width ** 2) * self.channels)
+        self.cell1 = ConvolutionalBlock(
+            self.channels, self.channels, "nearest", num_skip_in=0, short_cut=True
+        )
+        self.cell2 = ConvolutionalBlock(
+            self.channels, self.channels, "bilinear", num_skip_in=1, short_cut=True
+        )
+        self.cell3 = ConvolutionalBlock(
+            self.channels, self.channels, "nearest", num_skip_in=2, short_cut=False
+        )
+        self.to_rgb = nn.Sequential(
+            nn.BatchNorm2d(self.channels),
+            nn.ReLU(),
+            nn.Conv2d(self.channels, out_channels, 3, 1, 1),
+            nn.Tanh(),
+        )
+        self.name = "GeneratorAutoGAN"
+
+    def forward(self, z):
+        h = self.l1(z).view(-1, self.channels, self.bottom_width, self.bottom_width)
+        h1_skip_out, h1 = self.cell1(h)
+        h2_skip_out, h2 = self.cell2(h1, (h1_skip_out,))
+        _, h3 = self.cell3(h2, (h1_skip_out, h2_skip_out))
+        output = self.to_rgb(h3)
+
+        return output
 
 
 if __name__ == "__main__":

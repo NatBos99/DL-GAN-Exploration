@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import pytorch_lightning as pl
-from utils import compute_FID
+from utils import compute_FID, compute_IS, create_dir_from_tensors
 
 class GAN(pl.LightningModule):
     def __init__(
@@ -16,10 +16,12 @@ class GAN(pl.LightningModule):
             b1: float = 0.0,
             b2: float = 0.9,
             dataset: str = "MNIST",
-            FID_dim: int = 2048
+            FID_step: int = 10,
+            FID_dim: int = 2048,
+            fid_max_data: int = 10000,
     ):
         super().__init__()
-        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_dim')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_step', 'FID_dim', 'fid_max_data')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -96,13 +98,29 @@ class GAN(pl.LightningModule):
         at the end of the epoch runs this function
         :return:
         """
-        z = self.validation_z.type_as(self.generator.linear_layer.weight)
-        gen_imgs = self(z)
-        # gen_imgs = self(self.validation_z)
-        grid = torchvision.utils.make_grid(gen_imgs)
-        # write generated images to tensorboard using the manual logger of pl
-        self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid, self.current_epoch)
+        z = self.validation_z.to('cuda' if torch.cuda.is_available() else 'cpu')
+        # TODO minibatch
 
-        FID = compute_FID(gen_imgs, self.dataset, self.hparams.batch_size, self.device, self.hparams.FID_dim)
-        self.log('FID', FID)
-        print('FID', FID)
+        train_dat = torch.utils.data.TensorDataset(z)  # assume train_in is a tensor
+        dataloader_train = torch.utils.data.DataLoader(train_dat, batch_size=self.hparams.batch_size)
+
+        offset = 0
+        for z_mini in dataloader_train:
+            gen_imgs = self(z_mini[0])
+            fake_path = create_dir_from_tensors(gen_imgs, offset=offset, already_created=False)
+            if (self.current_epoch + 1) % self.hparams.FID_step != 0:
+                break
+            offset += self.hparams.batch_size
+
+        grid = torchvision.utils.make_grid(gen_imgs)
+        self.logger.experiment.add_image('generated_image_epoch_{}'.format(self.current_epoch), grid,
+                                         self.current_epoch)
+        #
+
+        if (self.current_epoch + 1) % self.hparams.FID_step == 0:
+            FID = compute_FID(fake_path, self.dataset, self.hparams.batch_size,
+                              self.device, self.hparams.FID_dim, self.hparams.fid_max_data)
+            self.log('FID', FID)
+            if self.dataset not in ["MNIST", "FashionMNIST", "MNIST_128"]:
+                IS = compute_IS(fake_path, already_created=True)
+                self.log('IS', IS[0])

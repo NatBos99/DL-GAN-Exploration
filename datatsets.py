@@ -1,20 +1,34 @@
+import logging
+
 import torch
 from torch.utils.data import DataLoader, random_split
-from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, CelebA
 from torchvision import transforms
-import logging
+from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, CelebA
+
+
+def data_augmentation():
+    trans = [transforms.RandomCrop(32, padding=4),
+             transforms.RandomHorizontalFlip()]
+    return trans
 
 
 def get_dataset(args):
     logging.info('Loading {} dataset'.format(args.dataset))
+
+    data_aug_trans = data_augmentation() if args.data_augmentation else []
+
     if args.dataset == "CIFAR10":
         train = CIFAR10(root="Datasets/",
                         download=True,
-                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+                        transform=transforms.Compose(
+                            [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans,
+                             transforms.ToTensor()]))
         test = CIFAR10(root="Datasets/",
                        download=True,
                        train=False,
-                       transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+                       transform=transforms.Compose(
+                           [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans,
+                            transforms.ToTensor()]))
 
     elif args.dataset == "MNIST":
         if args.custom_mnist_download:
@@ -26,14 +40,14 @@ def get_dataset(args):
         train = MNIST(root="Datasets/MNIST",
                       download=True,
                       transform=transforms.Compose(
-                          [transforms.Resize(args.image_size), transforms.ToTensor(),
+                          [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans, transforms.ToTensor(),
                            transforms.Normalize([0.5], [0.5])]),
                       )
         test = MNIST(root="Datasets/",
                      download=True,
                      train=False,
                      transform=transforms.Compose(
-                         [transforms.Resize(args.image_size), transforms.ToTensor(),
+                         [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans, transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])]),
                      )
 
@@ -47,7 +61,7 @@ def get_dataset(args):
         train = MNIST(root="Datasets/",
                       download=True,
                       transform=transforms.Compose(
-                          [transforms.Resize(args.image_size), transforms.ToTensor(),
+                          [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans, transforms.ToTensor(),
                            transforms.Normalize([0.5], [0.5])])
                       )
         train.data = train.data[:128]
@@ -56,27 +70,32 @@ def get_dataset(args):
                      download=True,
                      train=False,
                      transform=transforms.Compose(
-                         [transforms.Resize(args.image_size), transforms.Grayscale(3), transforms.ToTensor(),
+                         [transforms.Resize(args.image_size), *data_aug_trans, *data_aug_trans, transforms.Grayscale(3),
+                          transforms.ToTensor(),
                           transforms.Normalize([0.5], [0.5])])
                      )
 
     elif args.dataset == "FashionMNIST":
         train = FashionMNIST(root="Datasets/",
-                        download=True,
-                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+                             download=True,
+                             transform=transforms.Compose(
+                                 [transforms.Resize(args.image_size), *data_aug_trans, transforms.ToTensor()]))
         test = FashionMNIST(root="Datasets/",
-                       download=True,
-                       train=False,
-                       transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+                            download=True,
+                            train=False,
+                            transform=transforms.Compose(
+                                [transforms.Resize(args.image_size), *data_aug_trans, transforms.ToTensor()]))
 
     elif args.dataset == "CelebA":
         train = CelebA(root="Datasets/",
-                        download=True,
-                        transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
-        test = CelebA(root="Datasets/",
                        download=True,
-                       train=False,
-                       transform=transforms.Compose([transforms.Resize(args.image_size), transforms.ToTensor()]))
+                       transform=transforms.Compose(
+                           [transforms.Resize(args.image_size), *data_aug_trans, transforms.ToTensor()]))
+        test = CelebA(root="Datasets/",
+                      download=True,
+                      train=False,
+                      transform=transforms.Compose(
+                          [transforms.Resize(args.image_size), *data_aug_trans, transforms.ToTensor()]))
 
     else:
         raise NotImplementedError('Unknown dataset')
@@ -85,7 +104,8 @@ def get_dataset(args):
     img_shape = img.size()
     data_size = len(train)
     train_size = int(args.train_valid_split * data_size)
-    train, validation = random_split(train, [train_size, data_size - train_size], generator=torch.Generator().manual_seed(41))
+    train, validation = random_split(train, [train_size, data_size - train_size],
+                                     generator=torch.Generator().manual_seed(41))
 
     train_loader = DataLoader(train,
                               batch_size=args.batch_size,
