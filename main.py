@@ -42,8 +42,8 @@ if __name__ == "__main__":
     # gen = GeneratorAutoGAN(channels=64, bottom_width=4, latent_dim=128, out_channels=3)
     # dis = DiscriminatorAutoGAN(channels=64, in_channels=3)
 
-    gen = GeneratorTransformer(img_shape, args.latent_dim)
-    # gen = GeneratorCNN(img_shape, args.latent_dim)
+    # gen = GeneratorTransformer(img_shape, args.latent_dim)
+    gen = GeneratorCNN(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape, args.dis_hidden)
     # dis = DiscriminatorTransformer(img_shape)
     checkpoint_callback = ModelCheckpoint(

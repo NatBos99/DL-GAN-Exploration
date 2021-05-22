@@ -1,6 +1,9 @@
 import torch
 import torch.nn.functional as F
 import torchvision
+from torch.autograd import Variable
+
+import numpy as np
 import pytorch_lightning as pl
 from utils import compute_FID, compute_IS, create_dir_from_tensors
 
@@ -37,6 +40,35 @@ class GAN(pl.LightningModule):
     def forward(self, z):
         return self.generator(z)
 
+    def WGAN_GP_loss(self, real_imgs, fake_imgs, real_validity, fake_validity, lambda_gp=10):
+
+        def compute_gradient_penalty(D, real_samples, fake_samples):
+            """Calculates the gradient penalty loss for WGAN GP"""
+            # Random weight term for interpolation between real and fake samples
+            alpha = torch.Tensor(np.random.random((real_samples.size(0), 1, 1, 1)))
+            # Get random interpolation between real and fake samples
+            interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+            d_interpolates = D(interpolates)
+            fake = Variable(torch.Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
+            # Get gradient w.r.t. interpolates
+            gradients = torch.autograd.grad(
+                outputs=d_interpolates,
+                inputs=interpolates,
+                grad_outputs=fake,
+                create_graph=True,
+                retain_graph=True,
+                only_inputs=True,
+            )[0]
+            gradients = gradients.view(gradients.size(0), -1)
+            gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+            return gradient_penalty
+
+        gradient_penalty = compute_gradient_penalty(self.discriminator, real_imgs, fake_imgs)
+        # Adversarial loss
+        d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + lambda_gp * gradient_penalty
+
+        return d_loss
+
     def adversarial_loss(self, y_hat, y):
         return F.binary_cross_entropy(y_hat, y)
 
@@ -61,22 +93,21 @@ class GAN(pl.LightningModule):
             D_fake = self.discriminator(gen_imgs)
             # g_loss = -torch.mean(D_fake)
             g_loss = self.adversarial_loss(D_fake, real)
+            # g_loss = -torch.mean(D_fake)
             return g_loss
 
         # train discriminator
         if optimizer_idx == 1:
-            # for p in self.discriminator.parameters():
-            #     p.data.clamp_(-0.1, 0.1)
-            fake = torch.zeros(real_imgs.size(0), 1).type_as(real_imgs)
 
             gen_imgs = self(z) # this calls the forward pass
-            real_loss = self.adversarial_loss(self.discriminator(real_imgs), real)
-            fake_loss = self.adversarial_loss(self.discriminator(gen_imgs), fake)
-            # D_real = self.discriminator(real_imgs)
-            # D_fake = self.discriminator(gen_imgs.detach())
-            # D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
-            dis_loss = (real_loss + fake_loss) / 2
-            # return D_loss
+
+            # Real images
+            real_validity = self.discriminator(real_imgs)
+            # Fake images
+            fake_validity = self.discriminator(gen_imgs)
+
+            dis_loss = self.WGAN_GP_loss(real_imgs, gen_imgs, real_validity, fake_validity)
+
             return dis_loss
 
     def configure_optimizers(self):
