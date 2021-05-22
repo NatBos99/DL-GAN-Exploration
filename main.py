@@ -45,6 +45,7 @@ if __name__ == "__main__":
     gen = GeneratorTransformer(img_shape, args.latent_dim)
     # gen = GeneratorCNN(img_shape, args.latent_dim)
     dis = DiscriminatorCNN(img_shape, args.dis_hidden)
+    # dis = DiscriminatorTransformer(img_shape)
     checkpoint_callback = ModelCheckpoint(
                         monitor='FID',
                         dirpath='Checkpoints',

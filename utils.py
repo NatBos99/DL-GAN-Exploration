@@ -131,7 +131,6 @@ def create_images_from_pickle_py(src, dest, dataset, fid_max_data=None):
         dict = pickle.load(file, encoding='latin1')
         images = dict['data'].reshape(-1, 3, 32, 32)
 
-
     size = fid_max_data if fid_max_data is not None else images.shape[0]
     for i in range(size):
         # reshape for cv write so that the channel is the last dim

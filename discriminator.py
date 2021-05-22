@@ -11,7 +11,7 @@ class DiscriminatorCNN(nn.Module):
     """
     D(x | theta)
     """
-    def __init__(self, input_shape, first_hidden_dim=64):
+    def __init__(self, input_shape, first_hidden_dim=256):
         super().__init__()
 
         self.input_shape = input_shape
@@ -33,12 +33,14 @@ class DiscriminatorCNN(nn.Module):
             *discriminator_block(self.input_shape[0], first_hidden_dim, bn=False),
             *discriminator_block(first_hidden_dim, first_hidden_dim * 2),
             *discriminator_block(first_hidden_dim * 2, first_hidden_dim * 4),
-            *discriminator_block(first_hidden_dim * 4, first_hidden_dim * 8)
-        )
+            *discriminator_block(first_hidden_dim * 4, first_hidden_dim * 8)        )
 
         # The height and width of downsampled image
         ds_size = self.input_shape[1] // 2 ** 4
-        self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 1), nn.Sigmoid())
+
+        self.adv_layer = nn.Sequential(nn.Linear(first_hidden_dim * 8 * ds_size ** 2, 256),
+                                       nn.Linear(256, 1),
+                                       nn.Sigmoid())
         self.name = "DiscriminatorCNN"
 
     def forward(self, img):
@@ -111,7 +113,7 @@ class DiscriminatorTransformer(nn.Module):
 
         self.input_shape = input_shape
         self.patch_size = 3
-        self.latent_dim = 128
+        self.latent_dim = 64
         self.patch_embed = nn.Conv2d(self.input_shape[0], self.latent_dim, kernel_size=self.patch_size, stride=self.patch_size, padding=0)
         num_patches = (self.input_shape[1] // self.patch_size)**2
         self.cls_token = nn.Parameter(torch.zeros(1, 1, self.latent_dim))
@@ -119,11 +121,12 @@ class DiscriminatorTransformer(nn.Module):
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
 
-        self.blocks = nn.ModuleList([nn.TransformerEncoderLayer(d_model=self.latent_dim, nhead=4, dim_feedforward=self.latent_dim*4) for i in range(4)])
+        self.blocks = nn.ModuleList([nn.TransformerEncoderLayer(d_model=self.latent_dim, nhead=4, dim_feedforward=self.latent_dim*4) for i in range(2)])
 
         self.norm = nn.LayerNorm(self.latent_dim)
 
-        self.head = nn.Linear(self.latent_dim, 1)
+        # self.head = nn.Linear(self.latent_dim, 1)
+        self.head = nn.Sequential(nn.Linear(self.latent_dim, 1), nn.Sigmoid())
 
         self.apply(self._init_weights)
         self.name = "DiscriminatorTransformer"
