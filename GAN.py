@@ -7,6 +7,7 @@ import numpy as np
 import pytorch_lightning as pl
 from utils import compute_FID, compute_IS, create_dir_from_tensors
 
+
 class GAN(pl.LightningModule):
     def __init__(
             self,
@@ -19,12 +20,13 @@ class GAN(pl.LightningModule):
             b1: float = 0.0,
             b2: float = 0.9,
             dataset: str = "MNIST",
+            use_scheduler: bool = True,
             FID_step: int = 10,
             FID_dim: int = 2048,
             fid_max_data: int = 10000,
     ):
         super().__init__()
-        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_step', 'FID_dim', 'fid_max_data')
+        self.save_hyperparameters('lr_gen', 'lr_dis', 'batch_size', 'b1', 'b2', 'FID_step', 'FID_dim', 'fid_max_data', 'use_scheduler')
 
         self.generator = generator_class
         self.discriminator = discriminator_class
@@ -89,7 +91,7 @@ class GAN(pl.LightningModule):
 
         # train generator
         if optimizer_idx == 0:
-            gen_imgs = self(z) # this calls the forward pass
+            gen_imgs = self(z)  # this calls the forward pass
             D_fake = self.discriminator(gen_imgs)
             # g_loss = -torch.mean(D_fake)
             # g_loss = self.adversarial_loss(D_fake, real)
@@ -99,7 +101,7 @@ class GAN(pl.LightningModule):
         # train discriminator
         if optimizer_idx == 1:
 
-            gen_imgs = self(z) # this calls the forward pass
+            gen_imgs = self(z)  # this calls the forward pass
 
             # Real images
             real_validity = self.discriminator(real_imgs)
@@ -113,16 +115,24 @@ class GAN(pl.LightningModule):
     def configure_optimizers(self):
         # https://pytorch-lightning.readthedocs.io/en/latest/common/optimizers.html#use-multiple-optimizers-like-gans
         gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen,
-                                 betas=(self.hparams.b1, self.hparams.b2))
+                                   betas=(self.hparams.b1, self.hparams.b2))
         dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis,
-                                 betas=(self.hparams.b1, self.hparams.b2))
-        # gen_opt = torch.optim.Adam(self.generator.parameters(), lr=self.hparams.lr_gen)
-        # dis_opt = torch.optim.Adam(self.discriminator.parameters(), lr=self.hparams.lr_dis)
-        # return (
-        #     {'optimizer': gen_opt, 'frequency': 1},
-        #     {'optimizer': dis_opt, 'frequency': 5}
-        # )
-        return gen_opt, dis_opt
+                                   betas=(self.hparams.b1, self.hparams.b2))
+
+        if self.hparams.use_scheduler:
+            lam = lambda epoch: max(0.95 ** epoch, 0.1)
+            scheduler1 = {
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(gen_opt, lam, last_epoch=-1),
+                'interval': 'epoch'
+            }
+            scheduler2 = {
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(dis_opt, lam, last_epoch=-1),
+                'interval': 'epoch'
+            }
+
+            return [gen_opt, dis_opt], [scheduler1, scheduler2]
+
+        return [gen_opt, dis_opt]
 
     def on_epoch_end(self):
         """
@@ -130,7 +140,7 @@ class GAN(pl.LightningModule):
         :return:
         """
         z = self.validation_z.to('cuda' if torch.cuda.is_available() else 'cpu')
-        # TODO minibatch
+
 
         train_dat = torch.utils.data.TensorDataset(z)  # assume train_in is a tensor
         dataloader_train = torch.utils.data.DataLoader(train_dat, batch_size=self.hparams.batch_size)

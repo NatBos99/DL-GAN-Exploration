@@ -43,7 +43,8 @@ def get_args(
             no_validation_images: int = 16,
             FID_dim: int = 64,
             FID_step: int = 10,
-            data_augmentation: int = False
+            data_augmentation: int = False,
+            use_scheduler: bool = True
             ):
     # cli arguments
     parser = argparse.ArgumentParser(
@@ -91,6 +92,8 @@ def get_args(
     parser.add_argument('--data_augmentation', type=bool, default=data_augmentation,
                         help="If the data should be augmentation")
 
+    parser.add_argument('--use_scheduler', type=bool, default=use_scheduler,
+                        help="If use learning rate scheduler")
     args = parser.parse_args()
 
     return args
