@@ -125,8 +125,8 @@ class DiscriminatorTransformer(nn.Module):
 
         self.norm = nn.LayerNorm(self.latent_dim)
 
-        # self.head = nn.Linear(self.latent_dim, 1)
-        self.head = nn.Sequential(nn.Linear(self.latent_dim, 1), nn.Sigmoid())
+        self.head = nn.Linear(self.latent_dim, 1)
+        # self.head = nn.Sequential(nn.Linear(self.latent_dim, 1), nn.Sigmoid())
 
         self.apply(self._init_weights)
         self.name = "DiscriminatorTransformer"

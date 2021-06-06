@@ -150,7 +150,7 @@ class GeneratorTransformer(nn.Module):
                  ):
         super().__init__()
         if encoder_stack_dims is None:
-            encoder_stack_dims = [1, 1, 1]
+            encoder_stack_dims = [5, 4, 2]
         self.latent_dim = latent_dim
         self.starting_layer_dim = starting_layer_dim
         self.init_width = image_shape[1] // 4
@@ -244,6 +244,91 @@ class GeneratorAutoGAN(nn.Module):
         output = self.to_rgb(h3)
 
         return output
+
+
+class PretrainedGeneratorTransformer(nn.Module):
+    """
+    G(z|theta)
+    """
+
+    def __init__(self,
+                 image_shape,  # channels x width x height
+                 latent_dim,
+                 starting_layer_dim: int = 64,
+                 encoder_stack_dims: List[int] = None,
+                 batch_size=32,
+                 freeze_net=False
+                 ):
+        super().__init__()
+        # https://github.com/kzl/universal-computation/blob/master/universal_computation/fpt.py
+        # https://huggingface.co/transformers/model_doc/gpt2.html
+
+        self.latent_dim = latent_dim
+        self.starting_layer_dim = starting_layer_dim
+        self.init_width = image_shape[1]//2
+        self.init_height = image_shape[2]//2
+        self.batch_size = batch_size
+
+        self.embedding_size = 128
+        from transformers import AutoModel
+        # self.pretrained_transformer = GPT2Model.from_pretrained('gpt2')
+        self.pretrained_transformer = AutoModel.from_pretrained("prajjwal1/bert-tiny")
+        # self.pretrained_transformer = AutoModel.from_config("prajjwal1/bert-tiny")
+
+        self.linear_layer = nn.Linear(latent_dim, self.embedding_size * self.init_width * self.init_height)
+        # self.lin2 = nn.Linear(latent_dim, self.embedding_size)
+
+        if freeze_net:
+            for name, p in self.pretrained_transformer.named_parameters():
+                name = name.lower()
+                if 'ln' in name:
+                    p.requires_grad = False
+                elif 'wpe' in name:
+                    p.requires_grad = False
+                elif 'mlp' in name:
+                    p.requires_grad = True  # only train MLP
+                elif 'attn' in name:
+                    p.requires_grad = False
+                else:
+                    p.requires_grad = False
+
+            self.linear_layer.requires_grad = False
+
+
+        self.upsample = nn.Upsample(scale_factor=4)
+
+        self.deconv = nn.Sequential(
+            nn.Conv2d(self.embedding_size, image_shape[0], 3, stride=1, padding=1),
+            nn.Tanh(),
+        )
+
+        self.image_shape = image_shape
+        self.name = "GeneratorTransformer"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def forward(self, z):
+        """
+        z - latent representation
+        :return:
+        """
+
+        out = self.linear_layer(z).view(-1, self.init_width * self.init_height, self.embedding_size)
+        # out = self.lin2(z)
+        batch_size = out.shape[0]
+
+        B = out.size()
+        H, W = self.init_width, self.init_height
+
+        transformer_outputs = self.pretrained_transformer(
+            inputs_embeds=out,
+            return_dict=True,
+            output_attentions=False,
+        )
+
+        out = transformer_outputs.last_hidden_state
+        out = self.upsample(out).view(batch_size, H*2, -1)
+        out = self.deconv(out.permute(0, 2, 1).view(-1, self.embedding_size, H*2, W*2))
+        return out
 
 
 if __name__ == "__main__":

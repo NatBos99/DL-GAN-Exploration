@@ -12,7 +12,7 @@ from torchvision import transforms
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from GAN import GAN
-from generator import GeneratorCNN, GeneratorTransformer, GeneratorAutoGAN
+from generator import GeneratorCNN, GeneratorTransformer, GeneratorAutoGAN, PretrainedGeneratorTransformer
 from discriminator import DiscriminatorCNN, DiscriminatorTransformer, DiscriminatorAutoGAN
 from datatsets import get_dataset
 from utils import get_args
@@ -29,8 +29,8 @@ def training(args, generator, discriminator, train_loader, valid_loader, checkpo
 
 
 if __name__ == "__main__":
-    args = get_args(dataset="MNIST_128", n_epoch=10, no_validation_images=100, fid_max_data=100,
-                    FID_dim=2048, FID_step=1, latent_dim=128, train_valid_split=0.01)
+    args = get_args(dataset="CIFAR10", n_epoch=10, no_validation_images=1000, fid_max_data=1000,
+                    FID_dim=2048, FID_step=1, latent_dim=128, train_valid_split=0.9)
 
     #  delete the previously created images
     dest = 'Validation-Gen-Images'
@@ -40,11 +40,12 @@ if __name__ == "__main__":
     train, valid, test, img_shape = get_dataset(args)
 
     # gen = GeneratorAutoGAN(channels=64, bottom_width=4, latent_dim=128, out_channels=3)
-    # dis = DiscriminatorAutoGAN(channels=64, in_channels=3)
+    dis = DiscriminatorAutoGAN(channels=80, in_channels=3)
 
-    # gen = GeneratorTransformer(img_shape, args.latent_dim)
-    gen = GeneratorCNN(img_shape, args.latent_dim)
-    dis = DiscriminatorCNN(img_shape, args.dis_hidden)
+    print(args.batch_size)
+    gen = PretrainedGeneratorTransformer(img_shape, 128, batch_size=args.batch_size, freeze_net=True)
+    # gen = GeneratorCNN(img_shape, 96)
+    # dis = DiscriminatorCNN(img_shape, args.dis_hidden)
     # dis = DiscriminatorTransformer(img_shape)
     checkpoint_callback = ModelCheckpoint(
                         monitor='FID',

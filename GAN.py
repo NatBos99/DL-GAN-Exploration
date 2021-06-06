@@ -13,8 +13,8 @@ class GAN(pl.LightningModule):
             generator_class,
             discriminator_class,
             no_validation_images: int = 10,
-            lr_gen: float = 1E-3,
-            lr_dis: float = 1E-2,
+            lr_gen: float = 1E-4,
+            lr_dis: float = 1E-4,
             batch_size: int = 32,
             b1: float = 0.0,
             b2: float = 0.9,
@@ -92,8 +92,8 @@ class GAN(pl.LightningModule):
             gen_imgs = self(z) # this calls the forward pass
             D_fake = self.discriminator(gen_imgs)
             # g_loss = -torch.mean(D_fake)
-            g_loss = self.adversarial_loss(D_fake, real)
-            # g_loss = -torch.mean(D_fake)
+            # g_loss = self.adversarial_loss(D_fake, real)
+            g_loss = -torch.mean(D_fake)
             return g_loss
 
         # train discriminator
@@ -123,13 +123,14 @@ class GAN(pl.LightningModule):
         #     {'optimizer': dis_opt, 'frequency': 5}
         # )
         return gen_opt, dis_opt
+        # return {'optimizer': gen_opt, 'lr_scheduler': }, {'optimizer': dis_opt, 'lr_scheduler': }
 
     def on_epoch_end(self):
         """
         at the end of the epoch runs this function
         :return:
         """
-        z = self.validation_z.to('cuda' if torch.cuda.is_available() else 'cpu')
+        z = self.validation_z.to(self.device)
         # TODO minibatch
 
         train_dat = torch.utils.data.TensorDataset(z)  # assume train_in is a tensor
